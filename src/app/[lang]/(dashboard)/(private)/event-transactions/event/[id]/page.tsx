@@ -305,29 +305,47 @@ const EventTransactionPage = ({ params }: EventDetailProps) => {
   useEffect(() => {
     const fetchEventTransactions = async () => {
       try {
-        const result = await fetchWithAuthFallback(API_ENDPOINTS.TRANSACTIONS.EVENT(params.id, currentPage))
+        setLoading(true)
+        const response = await fetchWithAuthFallback(API_ENDPOINTS.TRANSACTIONS.EVENT(params.id, currentPage))
         
-        console.log('API Response:', result.data); // Debug log
-        
-        if (result.success && result.data.data && result.data.data.events && result.data.data.events.length > 0) {
-          const eventData = result.data.data.events[0];
-          setEventInfo({
-            event_id: eventData.event_id,
-            event_title: eventData.event_title,
-            event_status: eventData.event_status,
-            event_start_date: eventData.event_start_date,
-            event_end_date: eventData.event_end_date,
-            total_amount: eventData.total_amount,
-            transaction_count: eventData.transaction_count
-          });
-          setTransactions(eventData.transactions || []);
-          setPagination({
-            current_page: result.data.data.current_page,
-            per_page: result.data.data.per_page,
-            last_page: result.data.data.last_page
-          });
+        if (response.ok) {
+          const responseText = await response.text();
+          if (responseText) {
+            try {
+              const result = JSON.parse(responseText);
+              console.log('API Response:', result);
+              
+              if (result.data && result.data.events && result.data.events.length > 0) {
+                const eventData = result.data.events[0];
+                setEventInfo({
+                  event_id: eventData.event_id,
+                  event_title: eventData.event_title,
+                  event_status: eventData.event_status,
+                  event_start_date: eventData.event_start_date,
+                  event_end_date: eventData.event_end_date,
+                  total_amount: eventData.total_amount,
+                  transaction_count: eventData.transaction_count
+                });
+                setTransactions(eventData.transactions || []);
+                setPagination({
+                  current_page: result.data.current_page,
+                  per_page: result.data.per_page,
+                  last_page: result.data.last_page
+                });
+              } else {
+                setError('Event data not found in response');
+              }
+            } catch (parseError) {
+              console.error('Error parsing JSON:', parseError);
+              setError('Failed to parse event data');
+            }
+          } else {
+            console.error('Empty response from event transactions API');
+            setError('No data received from server');
+          }
         } else {
-          setError('Event not found');
+          console.error('Error fetching event transactions:', response.status, response.statusText);
+          setError(`Failed to fetch event transactions: ${response.statusText}`);
         }
       } catch (err) {
         setError('Failed to fetch event transactions')
