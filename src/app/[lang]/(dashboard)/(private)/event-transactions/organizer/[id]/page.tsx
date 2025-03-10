@@ -202,56 +202,74 @@ const OrganizerTransactionsPage = ({ params }: PageProps) => {
   useEffect(() => {
     const fetchOrganizerTransactions = async () => {
       try {
-        const result = await fetchWithAuthFallback(API_ENDPOINTS.TRANSACTIONS.ORGANIZER(params.id))
+        setLoading(true)
+        const response = await fetchWithAuthFallback(API_ENDPOINTS.TRANSACTIONS.ORGANIZER(params.id))
         
-        console.log('API Response:', result.data); // Debug log
-        
-        if (result.success && result.data.data) {
-          setOrganizerInfo({
-            organizer_id: result.data.data.organizer_id,
-            organizer_name: result.data.data.organizer_name,
-            organizer_email: result.data.data.organizer_email,
-            total_amount: result.data.data.total_amount,
-            total_transactions: result.data.data.total_transactions || 0
-          });
-          
-          // Process events to ensure event_status is available
-          const processedEvents = result.data.data.events?.map(event => {
-            // If event_status is already available, use it
-            if (event.event_status) {
-              return event;
+        if (response.ok) {
+          const responseText = await response.text();
+          if (responseText) {
+            try {
+              const result = JSON.parse(responseText);
+              console.log('API Response:', result);
+              
+              if (result.data) {
+                setOrganizerInfo({
+                  organizer_id: result.data.organizer_id,
+                  organizer_name: result.data.organizer_name,
+                  organizer_email: result.data.organizer_email,
+                  total_amount: result.data.total_amount,
+                  total_transactions: result.data.total_transactions || 0
+                });
+                
+                // Process events to ensure event_status is available
+                const processedEvents = result.data.events?.map(event => {
+                  // If event_status is already available, use it
+                  if (event.event_status) {
+                    return event;
+                  }
+                  
+                  // Try to get status from the first transaction's event object
+                  const firstTransaction = event.transactions && event.transactions.length > 0 ? event.transactions[0] : null;
+                  const eventStatus = firstTransaction?.event?.status || 'N/A';
+                  
+                  return {
+                    ...event,
+                    event_status: eventStatus
+                  };
+                }) || [];
+                
+                setEvents(processedEvents);
+                
+                const sumTransactions = processedEvents.reduce((sum, event) => sum + (event.transaction_count || 0), 0) || 0;
+                
+                console.log('Organizer Info:', {
+                  total_transactions: result.data.total_transactions,
+                  events_length: processedEvents.length,
+                  sum_transactions: sumTransactions,
+                  discrepancy: result.data.total_transactions - sumTransactions
+                });
+                
+                // Log the first processed event to check if event_status is available
+                if (processedEvents.length > 0) {
+                  console.log('First processed event:', {
+                    event_title: processedEvents[0].event_title,
+                    event_status: processedEvents[0].event_status
+                  });
+                }
+              } else {
+                setError('Organizer information not available in response');
+              }
+            } catch (parseError) {
+              console.error('Error parsing JSON:', parseError);
+              setError('Failed to parse organizer data');
             }
-            
-            // Try to get status from the first transaction's event object
-            const firstTransaction = event.transactions && event.transactions.length > 0 ? event.transactions[0] : null;
-            const eventStatus = firstTransaction?.event?.status || 'N/A';
-            
-            return {
-              ...event,
-              event_status: eventStatus
-            };
-          }) || [];
-          
-          setEvents(processedEvents);
-          
-          const sumTransactions = processedEvents.reduce((sum, event) => sum + (event.transaction_count || 0), 0) || 0;
-          
-          console.log('Organizer Info:', {
-            total_transactions: result.data.data.total_transactions,
-            events_length: processedEvents.length,
-            sum_transactions: sumTransactions,
-            discrepancy: result.data.data.total_transactions - sumTransactions
-          }); // Debug log
-          
-          // Log the first processed event to check if event_status is available
-          if (processedEvents.length > 0) {
-            console.log('First processed event:', {
-              event_title: processedEvents[0].event_title,
-              event_status: processedEvents[0].event_status
-            });
+          } else {
+            console.error('Empty response from organizer transactions API');
+            setError('No data received from server');
           }
         } else {
-          setError('Organizer information not available');
+          console.error('Error fetching organizer transactions:', response.status, response.statusText);
+          setError(`Failed to fetch organizer transactions: ${response.statusText}`);
         }
       } catch (err) {
         setError('Failed to fetch organizer transactions')
