@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+
 import { useRouter } from 'next/navigation'
 
 // MUI Imports
@@ -31,12 +32,12 @@ const StatCard = ({ icon, label, value }: { icon: string; label: string; value: 
   <Card>
     <CardContent>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-        <Box 
-          sx={{ 
-            width: 48, 
-            height: 48, 
-            display: 'flex', 
-            alignItems: 'center', 
+        <Box
+          sx={{
+            width: 48,
+            height: 48,
+            display: 'flex',
+            alignItems: 'center',
             justifyContent: 'center',
             borderRadius: 2,
             backgroundColor: 'primary.lighter'
@@ -45,12 +46,10 @@ const StatCard = ({ icon, label, value }: { icon: string; label: string; value: 
           <i className={icon} style={{ fontSize: '24px', color: 'var(--mui-palette-primary-main)' }} />
         </Box>
         <Box>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant='body2' color='text.secondary'>
             {label}
           </Typography>
-          <Typography variant="h6">
-            {value}
-          </Typography>
+          <Typography variant='h6'>{value}</Typography>
         </Box>
       </Box>
     </CardContent>
@@ -69,8 +68,9 @@ const EventOrganizerDetailPage = ({ params }: { params: { uuid: string } }) => {
   useEffect(() => {
     const fetchOrganizerDetails = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/public/email-organizers/${params.uuid}`)
+        const response = await fetch(`http://airatix.id:8000/public/email-organizers/${params.uuid}`)
         const result: EventOrganizerDetailResponse = await response.json()
+
         setData(result.data)
       } catch (err) {
         setError('Failed to fetch organizer details')
@@ -85,16 +85,17 @@ const EventOrganizerDetailPage = ({ params }: { params: { uuid: string } }) => {
 
   useEffect(() => {
     const fetchTransactionData = async () => {
-      if (!data) return;
-      
+      if (!data) return
+
       try {
-        const response = await fetch(`http://localhost:8000/public/transactions?organizer_id=${data.id}`)
+        const response = await fetch(`http://airatix.id:8000/public/transactions?organizer_id=${data.id}`)
         const result: TransactionsResponse = await response.json()
-        
+
         // Find the organizer in the response
-        const organizer = result.data.organizers?.find(org => org.organizer_id === data.id);
+        const organizer = result.data.organizers?.find(org => org.organizer_id === data.id)
+
         if (organizer) {
-          setTransactionData(organizer);
+          setTransactionData(organizer)
         }
       } catch (err) {
         setTransactionError('Failed to fetch transaction data')
@@ -105,12 +106,12 @@ const EventOrganizerDetailPage = ({ params }: { params: { uuid: string } }) => {
     }
 
     if (data) {
-      fetchTransactionData();
+      fetchTransactionData()
     }
   }, [data])
 
   const handleBack = () => {
-    router.push('/en/event-organizers');
+    router.push('/en/event-organizers')
   }
 
   if (loading) {
@@ -123,7 +124,7 @@ const EventOrganizerDetailPage = ({ params }: { params: { uuid: string } }) => {
 
   if (error || !data) {
     return (
-      <Alert severity="error" sx={{ mb: 4 }}>
+      <Alert severity='error' sx={{ mb: 4 }}>
         {error || 'Failed to load organizer details'}
       </Alert>
     )
@@ -140,20 +141,20 @@ const EventOrganizerDetailPage = ({ params }: { params: { uuid: string } }) => {
   return (
     <>
       <Box sx={{ mb: 4, display: 'flex', alignItems: 'center' }}>
-        <Button variant="outlined" onClick={handleBack} startIcon={<i className='ri-arrow-left-line' />} sx={{ mr: 2 }}>
+        <Button variant='outlined' onClick={handleBack} startIcon={<i className='ri-arrow-left-line' />} sx={{ mr: 2 }}>
           Back
         </Button>
-        <Typography variant="h5">Event Organizer Details</Typography>
+        <Typography variant='h5'>Event Organizer Details</Typography>
       </Box>
-    
+
       <Grid container spacing={4}>
         {/* Basic Information */}
         <Grid item xs={12}>
           <Card>
-            <CardHeader 
-              title="Organizer Information" 
+            <CardHeader
+              title='Organizer Information'
               action={
-                <Chip 
+                <Chip
                   color={data.user ? 'success' : 'warning'}
                   icon={<i className={data.user ? 'ri-check-line' : 'ri-time-line'} />}
                   label={data.user ? 'Registered' : 'Not Registered'}
@@ -165,11 +166,15 @@ const EventOrganizerDetailPage = ({ params }: { params: { uuid: string } }) => {
                 <Grid item xs={12} md={6}>
                   <Stack spacing={2}>
                     <Box>
-                      <Typography variant="caption" color="text.secondary">Email</Typography>
+                      <Typography variant='caption' color='text.secondary'>
+                        Email
+                      </Typography>
                       <Typography>{data.email}</Typography>
                     </Box>
                     <Box>
-                      <Typography variant="caption" color="text.secondary">Created At</Typography>
+                      <Typography variant='caption' color='text.secondary'>
+                        Created At
+                      </Typography>
                       <Typography>{new Date(data.created_at).toLocaleString()}</Typography>
                     </Box>
                   </Stack>
@@ -178,23 +183,31 @@ const EventOrganizerDetailPage = ({ params }: { params: { uuid: string } }) => {
                   <Grid item xs={12} md={6}>
                     <Stack spacing={2}>
                       <Box>
-                        <Typography variant="caption" color="text.secondary">Full Name</Typography>
+                        <Typography variant='caption' color='text.secondary'>
+                          Full Name
+                        </Typography>
                         <Typography>{data.user.full_name}</Typography>
                       </Box>
                       <Box>
-                        <Typography variant="caption" color="text.secondary">Timezone & Locale</Typography>
-                        <Typography>{data.user.timezone} • {data.user.locale.toUpperCase()}</Typography>
+                        <Typography variant='caption' color='text.secondary'>
+                          Timezone & Locale
+                        </Typography>
+                        <Typography>
+                          {data.user.timezone} • {data.user.locale.toUpperCase()}
+                        </Typography>
                       </Box>
                       <Box>
-                        <Typography variant="caption" color="text.secondary">Email Verification</Typography>
+                        <Typography variant='caption' color='text.secondary'>
+                          Email Verification
+                        </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Chip 
-                            size="small"
+                          <Chip
+                            size='small'
                             color={data.user.email_verified ? 'success' : 'warning'}
                             label={data.user.email_verified ? 'Verified' : 'Not Verified'}
                           />
                           {data.user.email_verified && (
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant='caption' color='text.secondary'>
                               on {new Date(data.user.verified_at).toLocaleString()}
                             </Typography>
                           )}
@@ -211,33 +224,27 @@ const EventOrganizerDetailPage = ({ params }: { params: { uuid: string } }) => {
         {/* Statistics */}
         {data.user && (
           <Grid item xs={12}>
-            <Typography variant="h6" sx={{ mb: 4 }}>Statistics</Typography>
+            <Typography variant='h6' sx={{ mb: 4 }}>
+              Statistics
+            </Typography>
             <Grid container spacing={4}>
               <Grid item xs={12} sm={6} md={3}>
-                <StatCard 
-                  icon="ri-calendar-event-line"
-                  label="Total Events"
-                  value={data.stats.total_events}
-                />
+                <StatCard icon='ri-calendar-event-line' label='Total Events' value={data.stats.total_events} />
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
-                <StatCard 
-                  icon="ri-money-dollar-circle-line"
-                  label="Total Sales"
+                <StatCard
+                  icon='ri-money-dollar-circle-line'
+                  label='Total Sales'
                   value={formatCurrency(data.stats.total_sales)}
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
-                <StatCard 
-                  icon="ri-shopping-cart-line"
-                  label="Total Orders"
-                  value={data.stats.total_orders}
-                />
+                <StatCard icon='ri-shopping-cart-line' label='Total Orders' value={data.stats.total_orders} />
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
-                <StatCard 
-                  icon="ri-user-star-line"
-                  label="Member Since"
+                <StatCard
+                  icon='ri-user-star-line'
+                  label='Member Since'
                   value={new Date(data.stats.member_since).toLocaleDateString()}
                 />
               </Grid>
@@ -249,49 +256,59 @@ const EventOrganizerDetailPage = ({ params }: { params: { uuid: string } }) => {
         {data.user && (
           <Grid item xs={12}>
             <Card>
-              <CardHeader title="Event Transactions" />
+              <CardHeader title='Event Transactions' />
               <CardContent>
                 {transactionLoading ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
                     <CircularProgress size={30} />
                   </Box>
                 ) : transactionError ? (
-                  <Alert severity="error">{transactionError}</Alert>
+                  <Alert severity='error'>{transactionError}</Alert>
                 ) : !transactionData ? (
-                  <Alert severity="info">No transaction data available for this organizer.</Alert>
+                  <Alert severity='info'>No transaction data available for this organizer.</Alert>
                 ) : (
                   <>
                     <Box sx={{ mb: 4 }}>
                       <Grid container spacing={2}>
                         <Grid item xs={12} md={4}>
-                          <Typography variant="subtitle2" color="text.secondary">Total Transactions</Typography>
-                          <Typography variant="h6">{transactionData.total_transactions}</Typography>
+                          <Typography variant='subtitle2' color='text.secondary'>
+                            Total Transactions
+                          </Typography>
+                          <Typography variant='h6'>{transactionData.total_transactions}</Typography>
                         </Grid>
                         <Grid item xs={12} md={4}>
-                          <Typography variant="subtitle2" color="text.secondary">Total Amount</Typography>
-                          <Typography variant="h6" color="success.main">{formatCurrency(transactionData.total_amount)}</Typography>
+                          <Typography variant='subtitle2' color='text.secondary'>
+                            Total Amount
+                          </Typography>
+                          <Typography variant='h6' color='success.main'>
+                            {formatCurrency(transactionData.total_amount)}
+                          </Typography>
                         </Grid>
                         <Grid item xs={12} md={4}>
-                          <Typography variant="subtitle2" color="text.secondary">Events with Transactions</Typography>
-                          <Typography variant="h6">{transactionData.events.length}</Typography>
+                          <Typography variant='subtitle2' color='text.secondary'>
+                            Events with Transactions
+                          </Typography>
+                          <Typography variant='h6'>{transactionData.events.length}</Typography>
                         </Grid>
                       </Grid>
                     </Box>
 
                     <Divider sx={{ mb: 4 }} />
 
-                    <Typography variant="subtitle1" sx={{ mb: 2 }}>Events</Typography>
-                    
+                    <Typography variant='subtitle1' sx={{ mb: 2 }}>
+                      Events
+                    </Typography>
+
                     <TableContainer>
-                      <Table size="small">
+                      <Table size='small'>
                         <TableHead>
                           <TableRow>
                             <TableCell>Event ID</TableCell>
                             <TableCell>Event Name</TableCell>
                             <TableCell>Start Date</TableCell>
                             <TableCell>End Date</TableCell>
-                            <TableCell align="right">Transactions</TableCell>
-                            <TableCell align="right">Amount</TableCell>
+                            <TableCell align='right'>Transactions</TableCell>
+                            <TableCell align='right'>Amount</TableCell>
                             <TableCell>Actions</TableCell>
                           </TableRow>
                         </TableHead>
@@ -302,11 +319,11 @@ const EventOrganizerDetailPage = ({ params }: { params: { uuid: string } }) => {
                               <TableCell>{event.event_title}</TableCell>
                               <TableCell>{new Date(event.event_start_date).toLocaleDateString()}</TableCell>
                               <TableCell>{new Date(event.event_end_date).toLocaleDateString()}</TableCell>
-                              <TableCell align="right">{event.transaction_count}</TableCell>
-                              <TableCell align="right">{formatCurrency(event.total_amount)}</TableCell>
+                              <TableCell align='right'>{event.transaction_count}</TableCell>
+                              <TableCell align='right'>{formatCurrency(event.total_amount)}</TableCell>
                               <TableCell>
-                                <Button 
-                                  size="small" 
+                                <Button
+                                  size='small'
                                   onClick={() => router.push(`/en/event-transactions/${event.event_id}`)}
                                 >
                                   View
