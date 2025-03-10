@@ -133,13 +133,26 @@ const EventTransactionsPage = () => {
         setLoading(true)
         
         // Use the fetchWithAuthFallback function which tries multiple token sources
-        const result = await fetchWithAuthFallback(API_ENDPOINTS.TRANSACTIONS.ALL);
+        const response = await fetchWithAuthFallback(API_ENDPOINTS.TRANSACTIONS.ALL);
         
-        if (result.success) {
-          setData(result.data.data.organizers || []);
+        if (response.ok) {
+          const responseText = await response.text();
+          if (responseText) {
+            try {
+              const result = JSON.parse(responseText);
+              console.log('Parsed transaction data:', result);
+              setData(result.data?.organizers || []);
+            } catch (parseError) {
+              console.error('Error parsing JSON:', parseError);
+              setError('Failed to parse transaction data');
+            }
+          } else {
+            console.error('Empty response from transactions API');
+            setError('No data received from server');
+          }
         } else {
-          setError(result.error || 'Failed to fetch transactions');
-          console.error('Error fetching transactions:', result.error);
+          console.error('Error fetching transactions:', response.status, response.statusText);
+          setError(`Failed to fetch transactions: ${response.statusText}`);
         }
       } catch (err) {
         setError('Failed to fetch transactions');
