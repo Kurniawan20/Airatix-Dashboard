@@ -88,7 +88,7 @@ const EventOrganizerDetailPage = ({ params }: { params: { uuid: string } }) => {
       if (!data) returns
 
       try {
-        const response = await fetch(`http://airatix.id:8000/public/transactions?organizer_id=${data.id}`)
+        const response = await fetch(`https://airatix.id:8000/public/transactions?organizer_id=${data.id}`)
         const result: TransactionsResponse = await response.json()
 
         // Find the organizer in the response

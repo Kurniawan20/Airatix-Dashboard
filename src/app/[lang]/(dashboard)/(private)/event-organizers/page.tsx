@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+
 import { useRouter } from 'next/navigation'
 
 // MUI Imports
@@ -33,7 +34,14 @@ import Select from '@mui/material/Select'
 import Stack from '@mui/material/Stack'
 
 // Third-party Imports
-import { createColumnHelper, flexRender, getCoreRowModel, getPaginationRowModel, useReactTable, getFilteredRowModel } from '@tanstack/react-table'
+import {
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  getPaginationRowModel,
+  useReactTable,
+  getFilteredRowModel
+} from '@tanstack/react-table'
 
 // Type Imports
 import type { EventOrganizer, EventOrganizersResponse } from '@/types/event-organizers'
@@ -57,12 +65,14 @@ const RowOptions = ({ email, hasUser, uuid }: { email: string; hasUser: boolean;
   const handleRegister = () => {
     // Get the current language from the URL
     const lang = window.location.pathname.split('/')[1] || 'en'
+
     router.push(`/${lang}/event-organizers/register?email=${encodeURIComponent(email)}`)
     handleClose()
   }
 
   const handleViewDetail = () => {
     const lang = window.location.pathname.split('/')[1] || 'en'
+
     router.push(`/${lang}/event-organizers/${uuid}`)
     handleClose()
   }
@@ -100,12 +110,12 @@ const RowOptions = ({ email, hasUser, uuid }: { email: string; hasUser: boolean;
   )
 }
 
-const FilterPopover = ({ 
-  anchorEl, 
+const FilterPopover = ({
+  anchorEl,
   onClose,
   filters,
   onFilterChange
-}: { 
+}: {
   anchorEl: HTMLElement | null
   onClose: () => void
   filters: {
@@ -129,26 +139,23 @@ const FilterPopover = ({
       onClose={onClose}
       anchorOrigin={{
         vertical: 'bottom',
-        horizontal: 'right',
+        horizontal: 'right'
       }}
       transformOrigin={{
         vertical: 'top',
-        horizontal: 'right',
+        horizontal: 'right'
       }}
     >
       <Box sx={{ p: 3, width: 300 }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>Filters</Typography>
+        <Typography variant='h6' sx={{ mb: 2 }}>
+          Filters
+        </Typography>
         <FormControl fullWidth>
           <InputLabel>Registration Status</InputLabel>
-          <Select
-            value={filters.status}
-            label="Registration Status"
-            onChange={handleStatusChange}
-            size="small"
-          >
-            <MenuItem value="all">All</MenuItem>
-            <MenuItem value="registered">Registered</MenuItem>
-            <MenuItem value="not_registered">Not Registered</MenuItem>
+          <Select value={filters.status} label='Registration Status' onChange={handleStatusChange} size='small'>
+            <MenuItem value='all'>All</MenuItem>
+            <MenuItem value='registered'>Registered</MenuItem>
+            <MenuItem value='not_registered'>Not Registered</MenuItem>
           </Select>
         </FormControl>
       </Box>
@@ -167,21 +174,24 @@ const columns = [
   columnHelper.accessor('user', {
     cell: info => {
       const user = info.getValue()
-      if (!user) return (
-        <Box>
-          <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <i className="ri-information-line" />
-            Not registered yet
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            Click the action menu to register this organizer
-          </Typography>
-        </Box>
-      )
+
+      if (!user)
+        return (
+          <Box>
+            <Typography variant='body2' color='text.secondary' sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <i className='ri-information-line' />
+              Not registered yet
+            </Typography>
+            <Typography variant='caption' color='text.secondary'>
+              Click the action menu to register this organizer
+            </Typography>
+          </Box>
+        )
+
       return (
         <Box>
-          <Typography variant="body2">{user.full_name}</Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant='body2'>{user.full_name}</Typography>
+          <Typography variant='caption' color='text.secondary'>
             {user.timezone} • {user.locale.toUpperCase()}
           </Typography>
         </Box>
@@ -196,8 +206,8 @@ const columns = [
   columnHelper.display({
     id: 'status',
     cell: ({ row }) => (
-      <Chip 
-        size="small"
+      <Chip
+        size='small'
         label={row.original.user ? 'Registered' : 'Pending'}
         color={row.original.user ? 'success' : 'warning'}
         icon={<i className={row.original.user ? 'ri-check-line' : 'ri-time-line'} />}
@@ -208,11 +218,7 @@ const columns = [
   columnHelper.display({
     id: 'actions',
     cell: ({ row }) => (
-      <RowOptions 
-        email={row.original.email} 
-        hasUser={row.original.user !== null}
-        uuid={row.original.uuid}
-      />
+      <RowOptions email={row.original.email} hasUser={row.original.user !== null} uuid={row.original.uuid} />
     ),
     header: 'Actions'
   })
@@ -223,12 +229,15 @@ const EventOrganizersPage = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [globalFilter, setGlobalFilter] = useState('')
+
   const [pagination, setPagination] = useState({
     total: 0,
     page: 0,
     pageSize: 10
   })
+
   const [filterAnchorEl, setFilterAnchorEl] = useState<null | HTMLElement>(null)
+
   const [filters, setFilters] = useState({
     status: 'all'
   })
@@ -236,9 +245,9 @@ const EventOrganizersPage = () => {
   useEffect(() => {
     const fetchEventOrganizers = async () => {
       try {
-        const response = await fetch('http://localhost:8000/public/email-organizers')
+        const response = await fetch('https://airatix.id:8000/public/email-organizers')
         const result: EventOrganizersResponse = await response.json()
-        
+
         setData(result.data.items)
         setPagination({
           total: result.data.total_emails,
@@ -272,6 +281,7 @@ const EventOrganizersPage = () => {
     if (filters.status === 'all') return true
     if (filters.status === 'registered') return item.user !== null
     if (filters.status === 'not_registered') return item.user === null
+
     return true
   })
 
@@ -302,6 +312,7 @@ const EventOrganizersPage = () => {
 
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newPageSize = parseInt(event.target.value, 10)
+
     setPagination(prev => ({
       ...prev,
       pageSize: newPageSize,
@@ -313,7 +324,7 @@ const EventOrganizersPage = () => {
     return (
       <Card>
         <Box sx={{ p: 4, textAlign: 'center' }}>
-          <Alert severity="error">{error}</Alert>
+          <Alert severity='error'>{error}</Alert>
         </Box>
       </Card>
     )
@@ -324,9 +335,9 @@ const EventOrganizersPage = () => {
   return (
     <Card>
       <CardHeader
-        title="Event Organizers"
+        title='Event Organizers'
         action={
-          <Stack direction="row" spacing={2}>
+          <Stack direction='row' spacing={2}>
             <TextField
               size='small'
               value={globalFilter}
@@ -341,10 +352,10 @@ const EventOrganizersPage = () => {
               }}
             />
             <Button
-              variant="outlined"
+              variant='outlined'
               onClick={handleFilterClick}
-              startIcon={<i className="ri-filter-3-line" />}
-              endIcon={activeFiltersCount > 0 && <Chip size="small" label={activeFiltersCount} />}
+              startIcon={<i className='ri-filter-3-line' />}
+              endIcon={activeFiltersCount > 0 && <Chip size='small' label={activeFiltersCount} />}
             >
               Filters
             </Button>
@@ -379,9 +390,7 @@ const EventOrganizersPage = () => {
               {table.getRowModel().rows.map(row => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map(cell => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
+                    <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                   ))}
                 </TableRow>
               ))}

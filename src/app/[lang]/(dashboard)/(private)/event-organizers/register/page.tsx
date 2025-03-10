@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+
 import { useRouter } from 'next/navigation'
 
 // MUI Imports
@@ -28,18 +29,18 @@ interface PageProps {
 const TIMEZONE_OPTIONS = [
   { value: 'Asia/Jakarta', label: 'Asia/Jakarta (UTC+7)' },
   { value: 'Asia/Singapore', label: 'Asia/Singapore (UTC+8)' },
-  { value: 'Asia/Tokyo', label: 'Asia/Tokyo (UTC+9)' },
+  { value: 'Asia/Tokyo', label: 'Asia/Tokyo (UTC+9)' }
 ]
 
 const CURRENCY_OPTIONS = [
   { value: 'IDR', label: 'Indonesian Rupiah (IDR)' },
   { value: 'USD', label: 'US Dollar (USD)' },
-  { value: 'SGD', label: 'Singapore Dollar (SGD)' },
+  { value: 'SGD', label: 'Singapore Dollar (SGD)' }
 ]
 
 const LOCALE_OPTIONS = [
   { value: 'en', label: 'English' },
-  { value: 'id', label: 'Indonesian' },
+  { value: 'id', label: 'Indonesian' }
 ]
 
 const generatePassword = () => {
@@ -47,22 +48,26 @@ const generatePassword = () => {
   const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
   const numbers = '0123456789'
   const symbols = '!@#$%^&*'
-  
+
   // Ensure at least one of each character type
-  let password = 
+  let password =
     lowercase.charAt(Math.floor(Math.random() * lowercase.length)) +
     uppercase.charAt(Math.floor(Math.random() * uppercase.length)) +
     numbers.charAt(Math.floor(Math.random() * numbers.length)) +
     symbols.charAt(Math.floor(Math.random() * symbols.length))
-  
+
   // Add more random characters to reach desired length
   const allChars = lowercase + uppercase + numbers + symbols
+
   for (let i = 0; i < 8; i++) {
     password += allChars.charAt(Math.floor(Math.random() * allChars.length))
   }
-  
+
   // Shuffle the password
-  return password.split('').sort(() => Math.random() - 0.5).join('')
+  return password
+    .split('')
+    .sort(() => Math.random() - 0.5)
+    .join('')
 }
 
 const RegisterEventOrganizerPage = ({ searchParams }: PageProps) => {
@@ -71,6 +76,7 @@ const RegisterEventOrganizerPage = ({ searchParams }: PageProps) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({})
+
   const [formData, setFormData] = useState<EventOrganizerRegistration>({
     first_name: '',
     last_name: '',
@@ -97,31 +103,34 @@ const RegisterEventOrganizerPage = ({ searchParams }: PageProps) => {
     }
   }, [searchParams.email, router, lang])
 
-  const handleChange = (field: keyof EventOrganizerRegistration) => (
-    event: React.ChangeEvent<HTMLInputElement | { value: unknown }>
-  ) => {
-    // Clear validation error when field changes
-    if (validationErrors[field]) {
-      setValidationErrors(prev => {
-        const newErrors = { ...prev }
-        delete newErrors[field]
-        return newErrors
-      })
-    }
+  const handleChange =
+    (field: keyof EventOrganizerRegistration) => (event: React.ChangeEvent<HTMLInputElement | { value: unknown }>) => {
+      // Clear validation error when field changes
+      if (validationErrors[field]) {
+        setValidationErrors(prev => {
+          const newErrors = { ...prev }
 
-    setFormData(prev => ({
-      ...prev,
-      [field]: event.target.value
-    }))
-  }
+          delete newErrors[field]
+
+          return newErrors
+        })
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        [field]: event.target.value
+      }))
+    }
 
   const handleGeneratePassword = () => {
     const newPassword = generatePassword()
+
     setFormData(prev => ({
       ...prev,
       password: newPassword,
       password_confirmation: newPassword
     }))
+
     // Show the password when generated
     setShowPassword(true)
   }
@@ -131,12 +140,12 @@ const RegisterEventOrganizerPage = ({ searchParams }: PageProps) => {
     setLoading(true)
     setError(null)
     setValidationErrors({})
-    
+
     try {
-      const response = await fetch('http://localhost:8000/auth/register', {
+      const response = await fetch('https://airatix.id:8000/auth/register', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(formData)
       })
@@ -167,11 +176,11 @@ const RegisterEventOrganizerPage = ({ searchParams }: PageProps) => {
   return (
     <form onSubmit={handleSubmit}>
       <Card>
-        <CardHeader 
-          title="Register Event Organizer" 
+        <CardHeader
+          title='Register Event Organizer'
           action={
-            <Button 
-              startIcon={<i className="ri-arrow-left-line" />}
+            <Button
+              startIcon={<i className='ri-arrow-left-line' />}
               onClick={() => router.push(`/${lang}/event-organizers`)}
             >
               Back
@@ -180,16 +189,16 @@ const RegisterEventOrganizerPage = ({ searchParams }: PageProps) => {
         />
         <CardContent>
           {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
+            <Alert severity='error' sx={{ mb: 3 }}>
               {error}
             </Alert>
           )}
-          
+
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="First Name"
+                label='First Name'
                 value={formData.first_name}
                 onChange={handleChange('first_name')}
                 error={!!validationErrors.first_name}
@@ -200,7 +209,7 @@ const RegisterEventOrganizerPage = ({ searchParams }: PageProps) => {
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Last Name"
+                label='Last Name'
                 value={formData.last_name}
                 onChange={handleChange('last_name')}
                 error={!!validationErrors.last_name}
@@ -210,8 +219,8 @@ const RegisterEventOrganizerPage = ({ searchParams }: PageProps) => {
             <Grid item xs={12}>
               <TextField
                 fullWidth
-                label="Email"
-                type="email"
+                label='Email'
+                type='email'
                 value={formData.email}
                 InputProps={{
                   readOnly: true,
@@ -225,7 +234,7 @@ const RegisterEventOrganizerPage = ({ searchParams }: PageProps) => {
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Password"
+                label='Password'
                 type={showPassword ? 'text' : 'password'}
                 value={formData.password}
                 onChange={handleChange('password')}
@@ -233,19 +242,12 @@ const RegisterEventOrganizerPage = ({ searchParams }: PageProps) => {
                 helperText={validationErrors.password?.[0]}
                 InputProps={{
                   endAdornment: (
-                    <InputAdornment position="end">
-                      <Stack direction="row" spacing={1}>
-                        <IconButton
-                          onClick={handleGeneratePassword}
-                          edge="end"
-                          title="Generate Password"
-                        >
-                          <i className="ri-refresh-line" />
+                    <InputAdornment position='end'>
+                      <Stack direction='row' spacing={1}>
+                        <IconButton onClick={handleGeneratePassword} edge='end' title='Generate Password'>
+                          <i className='ri-refresh-line' />
                         </IconButton>
-                        <IconButton
-                          onClick={() => setShowPassword(!showPassword)}
-                          edge="end"
-                        >
+                        <IconButton onClick={() => setShowPassword(!showPassword)} edge='end'>
                           <i className={showPassword ? 'ri-eye-off-line' : 'ri-eye-line'} />
                         </IconButton>
                       </Stack>
@@ -261,7 +263,7 @@ const RegisterEventOrganizerPage = ({ searchParams }: PageProps) => {
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                label="Confirm Password"
+                label='Confirm Password'
                 type={showPassword ? 'text' : 'password'}
                 value={formData.password_confirmation}
                 onChange={handleChange('password_confirmation')}
@@ -274,7 +276,7 @@ const RegisterEventOrganizerPage = ({ searchParams }: PageProps) => {
               <TextField
                 fullWidth
                 select
-                label="Timezone"
+                label='Timezone'
                 value={formData.timezone}
                 onChange={handleChange('timezone')}
                 error={!!validationErrors.timezone}
@@ -291,7 +293,7 @@ const RegisterEventOrganizerPage = ({ searchParams }: PageProps) => {
               <TextField
                 fullWidth
                 select
-                label="Currency"
+                label='Currency'
                 value={formData.currency_code}
                 onChange={handleChange('currency_code')}
                 error={!!validationErrors.currency_code}
@@ -308,7 +310,7 @@ const RegisterEventOrganizerPage = ({ searchParams }: PageProps) => {
               <TextField
                 fullWidth
                 select
-                label="Language"
+                label='Language'
                 value={formData.locale}
                 onChange={handleChange('locale')}
                 error={!!validationErrors.locale}
@@ -322,16 +324,13 @@ const RegisterEventOrganizerPage = ({ searchParams }: PageProps) => {
               </TextField>
             </Grid>
             <Grid item xs={12}>
-              <Stack direction="row" justifyContent="flex-end" spacing={2}>
-                <Button 
-                  variant="outlined" 
-                  onClick={() => router.push(`/${lang}/event-organizers`)}
-                >
+              <Stack direction='row' justifyContent='flex-end' spacing={2}>
+                <Button variant='outlined' onClick={() => router.push(`/${lang}/event-organizers`)}>
                   Cancel
                 </Button>
-                <Button 
-                  variant="contained" 
-                  type="submit"
+                <Button
+                  variant='contained'
+                  type='submit'
                   disabled={loading}
                   startIcon={loading && <CircularProgress size={20} />}
                 >

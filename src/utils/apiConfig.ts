@@ -5,7 +5,7 @@
 
 // Base API URLs
 const AUTH_API_BASE_URL = 'http://airatix.id:8088/api'
-const TRANSACTION_API_BASE_URL = 'http://airatix.id:8000/public'
+const TRANSACTION_API_BASE_URL = 'https://airatix.id:8000/public'
 
 // API Endpoints
 export const API_ENDPOINTS = {
