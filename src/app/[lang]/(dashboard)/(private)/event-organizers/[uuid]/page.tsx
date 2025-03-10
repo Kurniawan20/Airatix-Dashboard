@@ -85,7 +85,7 @@ const EventOrganizerDetailPage = ({ params }: { params: { uuid: string } }) => {
 
   useEffect(() => {
     const fetchTransactionData = async () => {
-      if (!data) return
+      if (!data) returns
 
       try {
         const response = await fetch(`http://airatix.id:8000/public/transactions?organizer_id=${data.id}`)
