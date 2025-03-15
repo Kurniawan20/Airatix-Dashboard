@@ -3,6 +3,9 @@
  * This file contains API endpoints and utility functions for making API requests
  */
 
+// Type Imports
+import type { User } from '@/types/user'
+
 // Base API URLs
 const AUTH_API_BASE_URL = 'http://airatix.id:8088/api'
 const TRANSACTION_API_BASE_URL = 'https://airatix.id:8000/public'
@@ -23,6 +26,11 @@ export const API_ENDPOINTS = {
     ORGANIZER: (organizerId: string | number) => `${TRANSACTION_API_BASE_URL}/organizers/${organizerId}/transactions`,
     EVENT: (eventId: string | number, page: number = 1) =>
       `${TRANSACTION_API_BASE_URL}/events/${eventId}/transactions?page=${page}`
+  },
+  PARTICIPANTS: {
+    ALL: `${AUTH_API_BASE_URL}/participants`,
+    BY_ID: (id: string) => `${AUTH_API_BASE_URL}/participants/${id}`,
+    REGISTER: `${AUTH_API_BASE_URL}/participants/register`
   }
 }
 
@@ -607,6 +615,193 @@ export const updateUserApi = async (userId: string, userData: Partial<User>) => 
     return {
       success: false,
       error: 'An unexpected error occurred while updating the user.'
+    }
+  }
+}
+
+/**
+ * Get all participants API call
+ * @returns The response from the get all participants API
+ */
+export const getAllParticipantsApi = async () => {
+  try {
+    const token = getAuthToken()
+    
+    if (!token) {
+      return {
+        success: false,
+        error: 'Authentication token not found',
+        status: 401,
+        data: null
+      }
+    }
+
+    const response = await fetchWithAuthFallback(API_ENDPOINTS.PARTICIPANTS.ALL)
+    
+    if (!response.ok) {
+      // Handle error response
+      let errorMessage = 'Failed to fetch participants'
+      
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.message || errorMessage
+      } catch (e) {
+        // If parsing JSON fails, use the default error message
+      }
+      
+      return {
+        success: false,
+        error: errorMessage,
+        status: response.status,
+        data: null
+      }
+    }
+
+    const data = await response.json()
+
+    return {
+      success: true,
+      data: data.data || [],
+      status: response.status,
+      error: null
+    }
+  } catch (error) {
+    console.error('Get all participants API error:', error)
+
+    return {
+      success: false,
+      error: 'Network error occurred',
+      status: 500,
+      data: null
+    }
+  }
+}
+
+/**
+ * Get participant by ID API call
+ * @param id The participant ID
+ * @returns The response from the get participant by ID API
+ */
+export const getParticipantByIdApi = async (id: string) => {
+  try {
+    console.log('Get participant by ID API call with ID:', id)
+
+    // Validate ID
+    if (!id) {
+      return {
+        success: false,
+        error: 'Participant ID is required'
+      }
+    }
+
+    const response = await fetchWithAuthFallback(API_ENDPOINTS.PARTICIPANTS.BY_ID(id))
+
+    if (!response.ok) {
+      let errorMessage = 'Failed to fetch participant'
+
+      if (response.status === 401) {
+        errorMessage = 'Unauthorized. Please login again.'
+      } else if (response.status === 403) {
+        errorMessage = 'You do not have permission to view this participant.'
+      } else if (response.status === 404) {
+        errorMessage = 'Participant not found.'
+      }
+
+      return {
+        success: false,
+        error: errorMessage
+      }
+    }
+
+    const data = await response.json()
+
+    return {
+      success: true,
+      data: data.data
+    }
+  } catch (error) {
+    console.error('Get participant by ID API error:', error)
+
+    return {
+      success: false,
+      error: 'An unexpected error occurred while fetching the participant'
+    }
+  }
+}
+
+/**
+ * Register participant API call
+ * @param participantData The participant data to register
+ * @returns The response from the register participant API
+ */
+export const registerParticipantApi = async (participantData: {
+  name: string
+  nik: string
+  city: string
+  province: string
+  team: string
+  className: string
+  vehicleBrand: string
+  vehicleType: string
+  vehicleColor: string
+  chassisNumber: string
+  engineNumber: string
+  pos: string
+}) => {
+  try {
+    console.log('Register participant API call with data:', participantData)
+
+    const token = getAuthToken()
+    
+    if (!token) {
+      return {
+        success: false,
+        error: 'Authentication token not found',
+        status: 401,
+        data: null
+      }
+    }
+
+    const response = await fetchWithAuthFallback(API_ENDPOINTS.PARTICIPANTS.REGISTER, {
+      method: 'POST',
+      body: JSON.stringify(participantData)
+    })
+
+    if (!response.ok) {
+      // Handle error response
+      let errorMessage = 'Failed to register participant'
+      
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.message || errorMessage
+      } catch (e) {
+        // If parsing JSON fails, use the default error message
+      }
+      
+      return {
+        success: false,
+        error: errorMessage,
+        status: response.status,
+        data: null
+      }
+    }
+
+    const data = await response.json()
+
+    return {
+      success: true,
+      data,
+      status: response.status,
+      error: null
+    }
+  } catch (error) {
+    console.error('Register participant API error:', error)
+
+    return {
+      success: false,
+      error: 'Network error occurred',
+      status: 500,
+      data: null
     }
   }
 }
