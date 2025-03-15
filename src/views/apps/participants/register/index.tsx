@@ -1,7 +1,7 @@
 'use client'
 
 // React Imports
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 
 // MUI Imports
 import Card from '@mui/material/Card'
@@ -17,11 +17,15 @@ import FormControl from '@mui/material/FormControl'
 import InputLabel from '@mui/material/InputLabel'
 import Select from '@mui/material/Select'
 import FormHelperText from '@mui/material/FormHelperText'
+import Box from '@mui/material/Box'
+import Typography from '@mui/material/Typography'
+import IconButton from '@mui/material/IconButton'
+import Avatar from '@mui/material/Avatar'
 
 // Third-party Imports
 import { useForm, Controller } from 'react-hook-form'
 import { valibotResolver } from '@hookform/resolvers/valibot'
-import { object, string, minLength, pipe, nonEmpty } from 'valibot'
+import { object, string, minLength, pipe, nonEmpty, optional } from 'valibot'
 import type { InferInput } from 'valibot'
 
 // API Import
@@ -68,7 +72,8 @@ const schema = object({
   chassisNumber: pipe(string(), nonEmpty('Chassis number is required')),
   engineNumber: pipe(string(), nonEmpty('Engine number is required')),
   phoneNumber: pipe(string(), nonEmpty('Phone number is required')),
-  pos: pipe(string(), nonEmpty('POS is required'))
+  pos: pipe(string(), nonEmpty('POS is required')),
+  photo: pipe(optional(string())) // Optional photo field
 })
 
 const RegisterParticipantForm = () => {
@@ -76,6 +81,10 @@ const RegisterParticipantForm = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  
+  // Refs
+  const fileInputRef = useRef<HTMLInputElement>(null)
   
   const {
     control,
@@ -98,13 +107,63 @@ const RegisterParticipantForm = () => {
       chassisNumber: '',
       engineNumber: '',
       phoneNumber: '',
-      pos: ''
+      pos: '',
+      photo: ''
     },
     resolver: valibotResolver(schema)
   })
 
   // Watch province to update cities
   const selectedProvince = watch('province')
+
+  // Handle photo upload
+  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    
+    if (file) {
+      // Validate file type
+      if (!file.type.match('image.*')) {
+        setError('Please upload an image file (JPEG, PNG, etc.)')
+        
+        return
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size should not exceed 5MB')
+        
+        return
+      }
+      
+      // Create a preview
+      const reader = new FileReader()
+      
+      reader.onload = (e) => {
+        const result = e.target?.result as string
+        
+        setPhotoPreview(result)
+        setValue('photo', result) // Store base64 string in form data
+      }
+      
+      reader.readAsDataURL(file)
+    }
+  }
+  
+  // Handle photo removal
+  const handleRemovePhoto = () => {
+    setPhotoPreview(null)
+    setValue('photo', '')
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+  
+  // Trigger file input click
+  const handleBrowseClick = () => {
+    fileInputRef.current?.click()
+  }
 
   const onSubmit = async (data: FormData) => {
     setLoading(true)
@@ -117,6 +176,7 @@ const RegisterParticipantForm = () => {
       if (response.success) {
         setSuccess('Participant registered successfully')
         reset() // Reset form fields
+        setPhotoPreview(null) // Clear photo preview
       } else {
         setError(response.error || 'Registration failed')
       }
@@ -137,13 +197,84 @@ const RegisterParticipantForm = () => {
             {error}
           </Alert>
         )}
+        
         {success && (
           <Alert severity='success' sx={{ mb: 4 }}>
             {success}
           </Alert>
         )}
+        
         <form onSubmit={handleSubmit(onSubmit)}>
           <Grid container spacing={5}>
+            {/* Photo Upload Section */}
+            <Grid item xs={12}>
+              <Typography variant='subtitle1' sx={{ mb: 2 }}>
+                Participant Photo
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                {photoPreview ? (
+                  <Box sx={{ position: 'relative' }}>
+                    <Avatar 
+                      src={photoPreview} 
+                      alt="Participant Photo" 
+                      sx={{ width: 100, height: 100 }}
+                    />
+                    <IconButton 
+                      size="small" 
+                      onClick={handleRemovePhoto}
+                      sx={{ 
+                        position: 'absolute', 
+                        top: -10, 
+                        right: -10, 
+                        bgcolor: 'error.main', 
+                        color: 'white',
+                        '&:hover': { bgcolor: 'error.dark' }
+                      }}
+                    >
+                      ✕
+                    </IconButton>
+                  </Box>
+                ) : (
+                  <Box 
+                    sx={{ 
+                      width: 100, 
+                      height: 100, 
+                      border: '2px dashed', 
+                      borderColor: 'divider',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'text.secondary'
+                    }}
+                  >
+                    <Typography variant="caption" align="center">
+                      No photo<br />uploaded
+                    </Typography>
+                  </Box>
+                )}
+                <Box>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoUpload}
+                    style={{ display: 'none' }}
+                    ref={fileInputRef}
+                  />
+                  <Button 
+                    variant="outlined" 
+                    onClick={handleBrowseClick}
+                    sx={{ mr: 2 }}
+                  >
+                    Browse
+                  </Button>
+                  <Typography variant="caption" color="text.secondary">
+                    Upload a photo of the participant (optional). Max size: 5MB.
+                  </Typography>
+                </Box>
+              </Box>
+            </Grid>
+            
             <Grid item xs={12} sm={6}>
               <Controller
                 name='name'
