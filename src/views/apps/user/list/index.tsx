@@ -14,7 +14,6 @@ import type { User } from '@/types/user'
 
 // Component Imports
 import UserListTable from './UserListTable'
-import UserListCards from './UserListCards'
 
 // API Imports
 import { getAllUsersApi } from '@/utils/apiConfig'
@@ -51,9 +50,6 @@ const UserList = () => {
 
   return (
     <Grid container spacing={6}>
-      <Grid item xs={12}>
-        <UserListCards />
-      </Grid>
       <Grid item xs={12}>
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
