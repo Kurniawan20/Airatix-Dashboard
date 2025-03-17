@@ -46,6 +46,9 @@ import {
 // Type Imports
 import type { EventOrganizer, EventOrganizersResponse } from '@/types/event-organizers'
 
+// Base API URLs
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://airatix.id:8000/public'
+
 // Style Imports
 import styles from '@core/styles/table.module.css'
 
@@ -245,7 +248,7 @@ const EventOrganizersPage = () => {
   useEffect(() => {
     const fetchEventOrganizers = async () => {
       try {
-        const response = await fetch('https://insight.airatix.id:8089/public/email-organizers')
+        const response = await fetch(`${API_BASE_URL}/email-organizers`)
         const result: EventOrganizersResponse = await response.json()
 
         setData(result.data.items)

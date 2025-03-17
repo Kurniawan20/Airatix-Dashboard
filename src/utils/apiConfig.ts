@@ -7,8 +7,8 @@
 import type { User } from '@/types/user'
 
 // Base API URLs
-const AUTH_API_BASE_URL = 'https://insight.airatix.id:8089/api'
-const TRANSACTION_API_BASE_URL = 'https://airatix.id:8000/public'
+const AUTH_API_BASE_URL = process.env.NEXT_PUBLIC_AUTH_API_BASE_URL || 'https://insight.airatix.id:8089/api'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://airatix.id:8000/public'
 
 // API Endpoints
 export const API_ENDPOINTS = {
@@ -23,10 +23,10 @@ export const API_ENDPOINTS = {
     PROFILE: `${AUTH_API_BASE_URL}/users/me`
   },
   TRANSACTIONS: {
-    ALL: `${TRANSACTION_API_BASE_URL}/transactions`,
-    ORGANIZER: (organizerId: string | number) => `${TRANSACTION_API_BASE_URL}/organizers/${organizerId}/transactions`,
+    ALL: `${API_BASE_URL}/transactions`,
+    ORGANIZER: (organizerId: string | number) => `${API_BASE_URL}/organizers/${organizerId}/transactions`,
     EVENT: (eventId: string | number, page: number = 1) =>
-      `${TRANSACTION_API_BASE_URL}/events/${eventId}/transactions?page=${page}`
+      `${API_BASE_URL}/events/${eventId}/transactions?page=${page}`
   },
   PARTICIPANTS: {
     ALL: `${AUTH_API_BASE_URL}/participants`,
@@ -797,6 +797,7 @@ export const getParticipantByIdApi = async (id: string) => {
  * @returns The response from the register participant API
  */
 export const registerParticipantApi = async (participantData: {
+  startNumber: string
   name: string
   nik: string
   city: string
@@ -809,6 +810,7 @@ export const registerParticipantApi = async (participantData: {
   chassisNumber: string
   engineNumber: string
   pos: string
+  file?: string
 }) => {
   try {
     console.log('Register participant API call with data:', participantData)

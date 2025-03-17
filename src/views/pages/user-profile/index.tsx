@@ -43,33 +43,7 @@ const UserProfile = ({ tabContentList, data }: { tabContentList: { [key: string]
                 }
                 value='profile'
               />
-              <Tab
-                label={
-                  <div className='flex items-center gap-2'>
-                    <i className='ri-team-line text-lg' />
-                    Teams
-                  </div>
-                }
-                value='teams'
-              />
-              <Tab
-                label={
-                  <div className='flex items-center gap-2'>
-                    <i className='ri-computer-line text-lg' />
-                    Projects
-                  </div>
-                }
-                value='projects'
-              />
-              <Tab
-                label={
-                  <div className='flex items-center gap-2'>
-                    <i className='ri-link-m text-lg' />
-                    Connections
-                  </div>
-                }
-                value='connections'
-              />
+              {/* Removed other tabs */}
             </CustomTabList>
 
             <TabPanel value={activeTab} className='p-0'>

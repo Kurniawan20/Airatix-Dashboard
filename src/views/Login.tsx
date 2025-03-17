@@ -5,6 +5,7 @@ import { useState } from 'react'
 
 // Next Imports
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 
 // MUI Imports
 import Typography from '@mui/material/Typography'

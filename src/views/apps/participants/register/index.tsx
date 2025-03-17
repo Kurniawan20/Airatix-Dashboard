@@ -1,7 +1,7 @@
 'use client'
 
 // React Imports
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 
 // MUI Imports
 import Card from '@mui/material/Card'
@@ -17,16 +17,12 @@ import FormControl from '@mui/material/FormControl'
 import InputLabel from '@mui/material/InputLabel'
 import Select from '@mui/material/Select'
 import FormHelperText from '@mui/material/FormHelperText'
-import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
-import IconButton from '@mui/material/IconButton'
-import Avatar from '@mui/material/Avatar'
 
 // Third-party Imports
 import { useForm, Controller } from 'react-hook-form'
 import { valibotResolver } from '@hookform/resolvers/valibot'
 import { object, string, minLength, pipe, nonEmpty, optional } from 'valibot'
-import type { InferInput } from 'valibot'
 
 // API Import
 import { registerParticipantApi } from '@/utils/apiConfig'
@@ -36,30 +32,90 @@ import { classOptions } from '@/data/classOptions'
 
 // Mock data for dropdowns
 const PROVINCES = [
-  'Aceh', 'Bali', 'Bangka Belitung', 'Banten', 'Bengkulu', 'DI Yogyakarta', 
-  'DKI Jakarta', 'Gorontalo', 'Jambi', 'Jawa Barat', 'Jawa Tengah', 'Jawa Timur', 
-  'Kalimantan Barat', 'Kalimantan Selatan', 'Kalimantan Tengah', 'Kalimantan Timur', 
-  'Kalimantan Utara', 'Kepulauan Riau', 'Lampung', 'Maluku', 'Maluku Utara', 
-  'Nusa Tenggara Barat', 'Nusa Tenggara Timur', 'Papua', 'Papua Barat', 'Riau', 
-  'Sulawesi Barat', 'Sulawesi Selatan', 'Sulawesi Tengah', 'Sulawesi Tenggara', 
-  'Sulawesi Utara', 'Sumatera Barat', 'Sumatera Selatan', 'Sumatera Utara'
+  'Aceh',
+  'Bali',
+  'Bangka Belitung',
+  'Banten',
+  'Bengkulu',
+  'DI Yogyakarta',
+  'DKI Jakarta',
+  'Gorontalo',
+  'Jambi',
+  'Jawa Barat',
+  'Jawa Tengah',
+  'Jawa Timur',
+  'Kalimantan Barat',
+  'Kalimantan Selatan',
+  'Kalimantan Tengah',
+  'Kalimantan Timur',
+  'Kalimantan Utara',
+  'Kepulauan Riau',
+  'Lampung',
+  'Maluku',
+  'Maluku Utara',
+  'Nusa Tenggara Barat',
+  'Nusa Tenggara Timur',
+  'Papua',
+  'Papua Barat',
+  'Riau',
+  'Sulawesi Barat',
+  'Sulawesi Selatan',
+  'Sulawesi Tengah',
+  'Sulawesi Tenggara',
+  'Sulawesi Utara',
+  'Sumatera Barat',
+  'Sumatera Selatan',
+  'Sumatera Utara'
 ]
 
 // Sample cities for each province (in a real app, this would be filtered based on selected province)
 const CITIES = {
-  'Aceh': ['Banda Aceh', 'Langsa', 'Lhokseumawe', 'Sabang', 'Subulussalam'],
-  'Bali': ['Denpasar', 'Singaraja', 'Tabanan', 'Gianyar', 'Karangasem'],
-  'DKI Jakarta': ['Jakarta Pusat', 'Jakarta Barat', 'Jakarta Selatan', 'Jakarta Timur', 'Jakarta Utara', 'Kepulauan Seribu'],
+  Aceh: ['Banda Aceh', 'Langsa', 'Lhokseumawe', 'Sabang', 'Subulussalam'],
+  Bali: ['Denpasar', 'Singaraja', 'Tabanan', 'Gianyar', 'Karangasem'],
+  'DKI Jakarta': [
+    'Jakarta Pusat',
+    'Jakarta Barat',
+    'Jakarta Selatan',
+    'Jakarta Timur',
+    'Jakarta Utara',
+    'Kepulauan Seribu'
+  ],
   'Jawa Barat': ['Bandung', 'Bekasi', 'Bogor', 'Cimahi', 'Cirebon', 'Depok', 'Sukabumi', 'Tasikmalaya'],
   'Jawa Tengah': ['Semarang', 'Solo', 'Magelang', 'Pekalongan', 'Salatiga', 'Tegal'],
   'Jawa Timur': ['Surabaya', 'Malang', 'Batu', 'Blitar', 'Kediri', 'Madiun', 'Mojokerto', 'Pasuruan', 'Probolinggo'],
-  'Sulawesi Utara': ['Manado', 'Bitung', 'Tomohon', 'Kotamobagu', 'Minahasa', 'Minahasa Utara', 'Minahasa Selatan', 'Minahasa Tenggara']
+  'Sulawesi Utara': [
+    'Manado',
+    'Bitung',
+    'Tomohon',
+    'Kotamobagu',
+    'Minahasa',
+    'Minahasa Utara',
+    'Minahasa Selatan',
+    'Minahasa Tenggara'
+  ]
 }
 
-type FormData = InferInput<typeof schema>
+type FormData = {
+  startNumber: string
+  name: string
+  nik: string
+  city: string
+  province: string
+  team: string
+  className: string
+  vehicleBrand: string
+  vehicleType: string
+  vehicleColor: string
+  chassisNumber: string
+  engineNumber: string
+  phoneNumber: string
+  pos: string
+  file: string
+}
 
 // Form validation schema
 const schema = object({
+  startNumber: pipe(string(), nonEmpty('Start number is required')),
   name: pipe(string(), nonEmpty('Name is required')),
   nik: pipe(string(), nonEmpty('NIK is required'), minLength(16, 'NIK must be 16 digits')),
   city: pipe(string(), nonEmpty('City is required')),
@@ -73,7 +129,7 @@ const schema = object({
   engineNumber: pipe(string(), nonEmpty('Engine number is required')),
   phoneNumber: pipe(string(), nonEmpty('Phone number is required')),
   pos: pipe(string(), nonEmpty('POS is required')),
-  photo: pipe(optional(string())) // Optional photo field
+  file: optional(string()) // Optional file field
 })
 
 const RegisterParticipantForm = () => {
@@ -81,11 +137,7 @@ const RegisterParticipantForm = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
-  
-  // Refs
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  
+
   const {
     control,
     handleSubmit,
@@ -95,6 +147,7 @@ const RegisterParticipantForm = () => {
     formState: { errors }
   } = useForm<FormData>({
     defaultValues: {
+      startNumber: '0001',
       name: '',
       nik: '',
       city: '',
@@ -108,62 +161,13 @@ const RegisterParticipantForm = () => {
       engineNumber: '',
       phoneNumber: '',
       pos: '',
-      photo: ''
+      file: ''
     },
     resolver: valibotResolver(schema)
   })
 
   // Watch province to update cities
   const selectedProvince = watch('province')
-
-  // Handle photo upload
-  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    
-    if (file) {
-      // Validate file type
-      if (!file.type.match('image.*')) {
-        setError('Please upload an image file (JPEG, PNG, etc.)')
-        
-        return
-      }
-      
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setError('Image size should not exceed 5MB')
-        
-        return
-      }
-      
-      // Create a preview
-      const reader = new FileReader()
-      
-      reader.onload = (e) => {
-        const result = e.target?.result as string
-        
-        setPhotoPreview(result)
-        setValue('photo', result) // Store base64 string in form data
-      }
-      
-      reader.readAsDataURL(file)
-    }
-  }
-  
-  // Handle photo removal
-  const handleRemovePhoto = () => {
-    setPhotoPreview(null)
-    setValue('photo', '')
-    
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
-  }
-  
-  // Trigger file input click
-  const handleBrowseClick = () => {
-    fileInputRef.current?.click()
-  }
 
   const onSubmit = async (data: FormData) => {
     setLoading(true)
@@ -176,11 +180,10 @@ const RegisterParticipantForm = () => {
       if (response.success) {
         setSuccess('Participant registered successfully')
         reset() // Reset form fields
-        setPhotoPreview(null) // Clear photo preview
       } else {
         setError(response.error || 'Registration failed')
       }
-    } catch (err) {
+    } catch (err: any) {
       setError('An unexpected error occurred')
       console.error('Register error:', err)
     } finally {
@@ -197,84 +200,86 @@ const RegisterParticipantForm = () => {
             {error}
           </Alert>
         )}
-        
+
         {success && (
           <Alert severity='success' sx={{ mb: 4 }}>
             {success}
           </Alert>
         )}
-        
+
         <form onSubmit={handleSubmit(onSubmit)}>
           <Grid container spacing={5}>
-            {/* Photo Upload Section */}
+            {/* Start Number Field - Styled as a card for better organization */}
             <Grid item xs={12}>
-              <Typography variant='subtitle1' sx={{ mb: 2 }}>
-                Participant Photo
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                {photoPreview ? (
-                  <Box sx={{ position: 'relative' }}>
-                    <Avatar 
-                      src={photoPreview} 
-                      alt="Participant Photo" 
-                      sx={{ width: 100, height: 100 }}
-                    />
-                    <IconButton 
-                      size="small" 
-                      onClick={handleRemovePhoto}
-                      sx={{ 
-                        position: 'absolute', 
-                        top: -10, 
-                        right: -10, 
-                        bgcolor: 'error.main', 
-                        color: 'white',
-                        '&:hover': { bgcolor: 'error.dark' }
-                      }}
-                    >
-                      ✕
-                    </IconButton>
-                  </Box>
-                ) : (
-                  <Box 
-                    sx={{ 
-                      width: 100, 
-                      height: 100, 
-                      border: '2px dashed', 
-                      borderColor: 'divider',
-                      borderRadius: '50%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'text.secondary'
+              <Card
+                sx={{
+                  mb: 2,
+                  backgroundColor: 'primary.main',
+                  boxShadow: 3,
+                  borderRadius: 2
+                }}
+              >
+                <CardContent sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography
+                    variant='h5'
+                    sx={{
+                      mb: 2,
+                      fontWeight: 'bold',
+                      color: 'white',
+                      textTransform: 'uppercase'
                     }}
                   >
-                    <Typography variant="caption" align="center">
-                      No photo<br />uploaded
-                    </Typography>
-                  </Box>
-                )}
-                <Box>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePhotoUpload}
-                    style={{ display: 'none' }}
-                    ref={fileInputRef}
-                  />
-                  <Button 
-                    variant="outlined" 
-                    onClick={handleBrowseClick}
-                    sx={{ mr: 2 }}
-                  >
-                    Browse
-                  </Button>
-                  <Typography variant="caption" color="text.secondary">
-                    Upload a photo of the participant (optional). Max size: 5MB.
+                    Participant Start Number
                   </Typography>
-                </Box>
-              </Box>
+
+                  <Typography
+                    variant='h2'
+                    sx={{
+                      mb: 2,
+                      fontWeight: 'bold',
+                      color: 'white',
+                      letterSpacing: '0.5rem',
+                      display: 'inline-block',
+                      border: '3px solid',
+                      borderColor: 'white',
+                      borderRadius: 1,
+                      px: 6,
+                      py: 2
+                    }}
+                  >
+                    #{watch('startNumber')}
+                  </Typography>
+
+                  <Typography variant='body2' color='white'>
+                    Pre-generated start number for this participant
+                  </Typography>
+
+                  {/* Hidden field to store the value */}
+                  <Controller
+                    name='startNumber'
+                    control={control}
+                    render={({ field }) => <input type='hidden' {...field} />}
+                  />
+                </CardContent>
+              </Card>
             </Grid>
-            
+
+            {/* Participant Information Section */}
+            <Grid item xs={12}>
+              <Typography
+                variant='h6'
+                sx={{
+                  mb: 2,
+                  fontWeight: 'bold',
+                  pb: 1,
+                  borderBottom: '2px solid',
+                  borderColor: 'primary.light'
+                }}
+              >
+                Participant Information
+              </Typography>
+            </Grid>
+
             <Grid item xs={12} sm={6}>
               <Controller
                 name='name'
@@ -307,21 +312,6 @@ const RegisterParticipantForm = () => {
             </Grid>
             <Grid item xs={12} sm={6}>
               <Controller
-                name='phoneNumber'
-                control={control}
-                render={({ field }) => (
-                  <TextField
-                    {...field}
-                    fullWidth
-                    label='Phone Number/WhatsApp'
-                    error={Boolean(errors.phoneNumber)}
-                    helperText={errors.phoneNumber?.message}
-                  />
-                )}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Controller
                 name='team'
                 control={control}
                 render={({ field }) => (
@@ -341,19 +331,19 @@ const RegisterParticipantForm = () => {
                 control={control}
                 render={({ field }) => (
                   <FormControl fullWidth error={Boolean(errors.province)}>
-                    <InputLabel id="province-label">Province</InputLabel>
+                    <InputLabel id='province-label'>Province</InputLabel>
                     <Select
                       {...field}
-                      labelId="province-label"
-                      label="Province"
-                      onChange={(e) => {
-                        field.onChange(e);
-                        
+                      labelId='province-label'
+                      label='Province'
+                      onChange={e => {
+                        field.onChange(e)
+
                         // Reset city when province changes
-                        setValue('city', '');
+                        setValue('city', '')
                       }}
                     >
-                      {PROVINCES.map((province) => (
+                      {PROVINCES.map(province => (
                         <MenuItem key={province} value={province}>
                           {province}
                         </MenuItem>
@@ -370,37 +360,46 @@ const RegisterParticipantForm = () => {
                 control={control}
                 render={({ field }) => (
                   <FormControl fullWidth error={Boolean(errors.city)}>
-                    <InputLabel id="city-label">City</InputLabel>
-                    <Select
-                      {...field}
-                      labelId="city-label"
-                      label="City"
-                      disabled={!selectedProvince}
-                    >
-                      {selectedProvince && CITIES[selectedProvince as keyof typeof CITIES]?.map((city) => (
-                        <MenuItem key={city} value={city}>
-                          {city}
-                        </MenuItem>
-                      ))}
+                    <InputLabel id='city-label'>City</InputLabel>
+                    <Select {...field} labelId='city-label' label='City' disabled={!selectedProvince}>
+                      {selectedProvince &&
+                        CITIES[selectedProvince as keyof typeof CITIES]?.map(city => (
+                          <MenuItem key={city} value={city}>
+                            {city}
+                          </MenuItem>
+                        ))}
                     </Select>
                     {errors.city && <FormHelperText>{errors.city.message}</FormHelperText>}
                   </FormControl>
                 )}
               />
             </Grid>
+
+            {/* Vehicle Information Section */}
+            <Grid item xs={12}>
+              <Typography
+                variant='h6'
+                sx={{
+                  mb: 2,
+                  fontWeight: 'bold',
+                  pb: 1,
+                  borderBottom: '2px solid',
+                  borderColor: 'primary.light'
+                }}
+              >
+                Vehicle Information
+              </Typography>
+            </Grid>
+
             <Grid item xs={12} sm={6}>
               <Controller
                 name='className'
                 control={control}
                 render={({ field }) => (
                   <FormControl fullWidth error={Boolean(errors.className)}>
-                    <InputLabel id="class-label">Class</InputLabel>
-                    <Select
-                      {...field}
-                      labelId="class-label"
-                      label="Class"
-                    >
-                      {classOptions.map((option) => (
+                    <InputLabel id='class-name-label'>Class Name</InputLabel>
+                    <Select {...field} label='Class Name' labelId='class-name-label'>
+                      {classOptions.map(option => (
                         <MenuItem key={option.value} value={option.value}>
                           {option.label}
                         </MenuItem>
@@ -486,6 +485,38 @@ const RegisterParticipantForm = () => {
                 )}
               />
             </Grid>
+
+            {/* Contact Information Section */}
+            <Grid item xs={12}>
+              <Typography
+                variant='h6'
+                sx={{
+                  mb: 2,
+                  fontWeight: 'bold',
+                  pb: 1,
+                  borderBottom: '2px solid',
+                  borderColor: 'primary.light'
+                }}
+              >
+                Contact Information
+              </Typography>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name='phoneNumber'
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    label='Phone Number'
+                    error={Boolean(errors.phoneNumber)}
+                    helperText={errors.phoneNumber?.message}
+                  />
+                )}
+              />
+            </Grid>
             <Grid item xs={12} sm={6}>
               <Controller
                 name='pos'
@@ -501,6 +532,65 @@ const RegisterParticipantForm = () => {
                 )}
               />
             </Grid>
+
+            {/* File Upload Section */}
+            <Grid item xs={12}>
+              <Typography
+                variant='h6'
+                sx={{
+                  mb: 2,
+                  fontWeight: 'bold',
+                  pb: 1,
+                  borderBottom: '2px solid',
+                  borderColor: 'primary.light'
+                }}
+              >
+                File Upload
+              </Typography>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name='file'
+                control={control}
+                render={({ field }) => (
+                  <TextField
+                    {...field}
+                    fullWidth
+                    type='file'
+                    InputLabelProps={{ shrink: true }}
+                    label='Upload File'
+                    inputProps={{ accept: 'image/*' }}
+                    onChange={e => {
+                      const file = (e.target as HTMLInputElement).files?.[0]
+
+                      if (file) {
+                        // Validate file size (max 5MB)
+                        if (file.size > 5 * 1024 * 1024) {
+                          setError('File size should not exceed 5MB')
+
+                          return
+                        }
+
+                        // Create a preview and store base64
+                        const reader = new FileReader()
+
+                        reader.onload = e => {
+                          const result = e.target?.result as string
+
+                          setValue('file', result) // Store base64 string in form data
+                        }
+
+                        reader.readAsDataURL(file)
+                      }
+                    }}
+                    error={Boolean(errors.file)}
+                    helperText={errors.file?.message || 'Upload a file (optional). Max size: 5MB.'}
+                  />
+                )}
+              />
+            </Grid>
+
             <Grid item xs={12}>
               <Button
                 type='submit'

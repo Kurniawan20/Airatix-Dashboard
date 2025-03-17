@@ -3,7 +3,6 @@ import Card from '@mui/material/Card'
 import CardMedia from '@mui/material/CardMedia'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
-import Button from '@mui/material/Button'
 
 // Type Imports
 import type { ProfileHeaderType } from '@/types/pages/profileTypes'
@@ -24,20 +23,10 @@ const UserProfileHeader = ({ data }: { data?: ProfileHeaderType }) => {
                 {data?.designationIcon && <i className={data?.designationIcon} />}
                 <Typography className='font-medium'>{data?.designation}</Typography>
               </div>
-              <div className='flex items-center gap-2'>
-                <i className='ri-map-pin-line' />
-                <Typography className='font-medium'>{data?.location}</Typography>
-              </div>
-              <div className='flex items-center gap-2'>
-                <i className='ri-calendar-line' />
-                <Typography className='font-medium'>{data?.joiningDate}</Typography>
-              </div>
+              {/* Removed location and calendar icons */}
             </div>
           </div>
-          <Button variant='contained' className='flex gap-2'>
-            <i className='ri-user-follow-line text-base'></i>
-            <span>Connected</span>
-          </Button>
+          {/* Removed connected button */}
         </div>
       </CardContent>
     </Card>

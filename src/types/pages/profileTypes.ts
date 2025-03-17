@@ -14,9 +14,9 @@ export type ProjectTableRowType = {
 export type ProfileHeaderType = {
   fullName: string
   coverImg: string
-  location: string
+  location?: string
   profileImg: string
-  joiningDate: string
+  joiningDate?: string
   designation: string
   designationIcon?: string
 }
