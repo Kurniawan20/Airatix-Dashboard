@@ -245,7 +245,7 @@ const EventOrganizersPage = () => {
   useEffect(() => {
     const fetchEventOrganizers = async () => {
       try {
-        const response = await fetch('https://airatix.id:8000/public/email-organizers')
+        const response = await fetch('https://insight.airatix.id:8089/public/email-organizers')
         const result: EventOrganizersResponse = await response.json()
 
         setData(result.data.items)

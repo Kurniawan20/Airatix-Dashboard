@@ -68,7 +68,7 @@ const EventOrganizerDetailPage = ({ params }: { params: { uuid: string } }) => {
   useEffect(() => {
     const fetchOrganizerDetails = async () => {
       try {
-        const response = await fetch(`http://airatix.id:8000/public/email-organizers/${params.uuid}`)
+        const response = await fetch(`https://insight.airatix.id:8089/public/email-organizers/${params.uuid}`)
         const result: EventOrganizerDetailResponse = await response.json()
 
         setData(result.data)

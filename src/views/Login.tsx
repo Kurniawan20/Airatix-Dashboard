@@ -4,7 +4,6 @@
 import { useState } from 'react'
 
 // Next Imports
-import Link from 'next/link'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 
 // MUI Imports
@@ -15,7 +14,6 @@ import InputAdornment from '@mui/material/InputAdornment'
 import Checkbox from '@mui/material/Checkbox'
 import Button from '@mui/material/Button'
 import FormControlLabel from '@mui/material/FormControlLabel'
-import Divider from '@mui/material/Divider'
 import Alert from '@mui/material/Alert'
 
 // Third-party Imports
@@ -87,8 +85,8 @@ const Login = ({ mode }: { mode: Mode }) => {
   } = useForm<FormData>({
     resolver: valibotResolver(schema),
     defaultValues: {
-      username: 'admin',
-      password: 'admin'
+      username: '',
+      password: ''
     }
   })
 
@@ -105,45 +103,66 @@ const Login = ({ mode }: { mode: Mode }) => {
   const handleClickShowPassword = () => setIsPasswordShown(show => !show)
 
   const onSubmit: SubmitHandler<FormData> = async (data: FormData) => {
-    const res = await signIn('credentials', {
-      username: data.username,
-      password: data.password,
-      redirect: false
-    })
+    try {
+      const res = await signIn('credentials', {
+        username: data.username,
+        password: data.password,
+        redirect: false
+      })
 
-    if (res && res.ok && res.error === null) {
-      // Get the token from the session
-      try {
-        console.log('Login successful, getting session token');
-        const sessionRes = await fetch('/api/auth/session');
-        const session = await sessionRes.json();
-        
-        console.log('Session after login:', session);
-        
-        // Store token in session storage
-        if (session && session.user && session.user.accessToken) {
-          console.log('Storing access token in session storage');
-          setAuthToken(session.user.accessToken);
-        } else if (session && session.accessToken) {
-          console.log('Storing session access token in session storage');
-          setAuthToken(session.accessToken);
-        } else {
-          console.log('No token found in session');
+      if (res && res.ok && res.error === null) {
+        // Get the token from the session
+        try {
+          console.log('Login successful, getting session token');
+          const sessionRes = await fetch('/api/auth/session');
+          const session = await sessionRes.json();
+          
+          console.log('Session after login:', session);
+          
+          // Store token in session storage
+          if (session && session.user && session.user.accessToken) {
+            console.log('Storing access token in session storage');
+            setAuthToken(session.user.accessToken);
+          } else if (session && session.accessToken) {
+            console.log('Storing session access token in session storage');
+            setAuthToken(session.accessToken);
+          } else {
+            console.log('No token found in session');
+          }
+        } catch (error) {
+          console.error('Error getting session after login:', error);
         }
-      } catch (error) {
-        console.error('Error getting session after login:', error);
+
+        // Vars
+        const redirectURL = searchParams.get('redirectTo') ?? '/'
+
+        router.replace(getLocalizedUrl(redirectURL, locale as Locale))
+      } else {
+        // Handle login error
+        if (res?.error) {
+          try {
+            const error = JSON.parse(res.error)
+            setErrorState(error)
+          } catch (parseError) {
+            // If error is not in JSON format, create a generic error object
+            setErrorState({
+              message: ['Invalid username or password. Please try again.']
+            })
+          }
+        } else {
+          // Generic error when res is undefined or doesn't contain error info
+          setErrorState({
+            message: ['Login failed. Please try again later.']
+          })
+        }
       }
-
-      // Vars
-      const redirectURL = searchParams.get('redirectTo') ?? '/'
-
-      router.replace(getLocalizedUrl(redirectURL, locale as Locale))
-    } else {
-      if (res?.error) {
-        const error = JSON.parse(res.error)
-
-        setErrorState(error)
-      }
+    } catch (error) {
+      console.error('Login error:', error)
+      
+      // Handle unexpected errors
+      setErrorState({
+        message: ['An unexpected error occurred. Please try again later.']
+      })
     }
   }
 
@@ -175,12 +194,14 @@ const Login = ({ mode }: { mode: Mode }) => {
             <Typography variant='h4'>{`Welcome to ${themeConfig.templateName}!👋🏻`}</Typography>
             <Typography>Please sign-in to your account and start the adventure</Typography>
           </div>
-          <Alert icon={false} className='bg-[var(--mui-palette-primary-lightOpacity)]'>
-            <Typography variant='body2' color='primary'>
-              Username: <span className='font-medium'>admin</span> / Pass:{' '}
-              <span className='font-medium'>admin</span>
-            </Typography>
-          </Alert>
+          
+          {errorState && (
+            <Alert severity="error" icon={<i className="ri-error-warning-line" />}>
+              <Typography variant='body2'>
+                Invalid username or password. Please try again.
+              </Typography>
+            </Alert>
+          )}
 
           <form
             noValidate
@@ -258,23 +279,7 @@ const Login = ({ mode }: { mode: Mode }) => {
             <Button fullWidth variant='contained' type='submit'>
               Log In
             </Button>
-            <div className='flex justify-center items-center flex-wrap gap-2'>
-              <Typography>New on our platform?</Typography>
-              <Typography component={Link} href={getLocalizedUrl('/register', locale as Locale)} color='primary'>
-                Create an account
-              </Typography>
-            </div>
           </form>
-          <Divider className='gap-3'>or</Divider>
-          <Button
-            color='secondary'
-            className='self-center text-textPrimary'
-            startIcon={<img src='/images/logos/google.png' alt='Google' width={22} />}
-            sx={{ '& .MuiButton-startIcon': { marginInlineEnd: 3 } }}
-            onClick={() => signIn('google')}
-          >
-            Sign in with Google
-          </Button>
         </div>
       </div>
     </div>
