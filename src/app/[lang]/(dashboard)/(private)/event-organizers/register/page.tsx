@@ -14,7 +14,6 @@ import Grid from '@mui/material/Grid'
 import Stack from '@mui/material/Stack'
 import IconButton from '@mui/material/IconButton'
 import InputAdornment from '@mui/material/InputAdornment'
-import MenuItem from '@mui/material/MenuItem'
 import Alert from '@mui/material/Alert'
 import CircularProgress from '@mui/material/CircularProgress'
 import FormHelperText from '@mui/material/FormHelperText'
@@ -25,23 +24,6 @@ import type { EventOrganizerRegistration, ValidationErrors } from '@/types/event
 interface PageProps {
   searchParams: { email?: string }
 }
-
-const TIMEZONE_OPTIONS = [
-  { value: 'Asia/Jakarta', label: 'Asia/Jakarta (UTC+7)' },
-  { value: 'Asia/Singapore', label: 'Asia/Singapore (UTC+8)' },
-  { value: 'Asia/Tokyo', label: 'Asia/Tokyo (UTC+9)' }
-]
-
-const CURRENCY_OPTIONS = [
-  { value: 'IDR', label: 'Indonesian Rupiah (IDR)' },
-  { value: 'USD', label: 'US Dollar (USD)' },
-  { value: 'SGD', label: 'Singapore Dollar (SGD)' }
-]
-
-const LOCALE_OPTIONS = [
-  { value: 'en', label: 'English' },
-  { value: 'id', label: 'Indonesian' }
-]
 
 const generatePassword = () => {
   const lowercase = 'abcdefghijklmnopqrstuvwxyz'
@@ -85,7 +67,7 @@ const RegisterEventOrganizerPage = ({ searchParams }: PageProps) => {
     password_confirmation: '',
     timezone: 'Asia/Jakarta',
     currency_code: 'IDR',
-    locale: 'en'
+    locale: 'id'
   })
 
   // Get the current language from the URL
@@ -214,6 +196,7 @@ const RegisterEventOrganizerPage = ({ searchParams }: PageProps) => {
                 onChange={handleChange('last_name')}
                 error={!!validationErrors.last_name}
                 helperText={validationErrors.last_name?.[0]}
+                required
               />
             </Grid>
             <Grid item xs={12}>
@@ -275,53 +258,43 @@ const RegisterEventOrganizerPage = ({ searchParams }: PageProps) => {
             <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
-                select
                 label='Timezone'
                 value={formData.timezone}
                 onChange={handleChange('timezone')}
                 error={!!validationErrors.timezone}
                 helperText={validationErrors.timezone?.[0]}
-              >
-                {TIMEZONE_OPTIONS.map(option => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </TextField>
+                InputProps={{
+                  readOnly: true,
+                  sx: { bgcolor: 'action.hover' }
+                }}
+              />
             </Grid>
             <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
-                select
                 label='Currency'
                 value={formData.currency_code}
                 onChange={handleChange('currency_code')}
                 error={!!validationErrors.currency_code}
                 helperText={validationErrors.currency_code?.[0]}
-              >
-                {CURRENCY_OPTIONS.map(option => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </TextField>
+                InputProps={{
+                  readOnly: true,
+                  sx: { bgcolor: 'action.hover' }
+                }}
+              />
             </Grid>
             <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
-                select
                 label='Language'
-                value={formData.locale}
-                onChange={handleChange('locale')}
+                value='Indonesian'
+                InputProps={{
+                  readOnly: true,
+                  sx: { bgcolor: 'action.hover' }
+                }}
                 error={!!validationErrors.locale}
                 helperText={validationErrors.locale?.[0]}
-              >
-                {LOCALE_OPTIONS.map(option => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </TextField>
+              />
             </Grid>
             <Grid item xs={12}>
               <Stack direction='row' justifyContent='flex-end' spacing={2}>

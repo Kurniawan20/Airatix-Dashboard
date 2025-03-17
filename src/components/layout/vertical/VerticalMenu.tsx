@@ -3,7 +3,6 @@ import { useParams } from 'next/navigation'
 
 // MUI Imports
 import { useTheme } from '@mui/material/styles'
-import Chip from '@mui/material/Chip'
 
 // Third-party Imports
 import PerfectScrollbar from 'react-perfect-scrollbar'
@@ -14,8 +13,6 @@ import type { VerticalMenuContextProps } from '@menu/components/vertical-menu/Me
 
 // Component Imports
 import { Menu, SubMenu, MenuItem, MenuSection } from '@menu/vertical-menu'
-
-// import { GenerateVerticalMenu } from '@components/GenerateMenu'
 
 // Hook Imports
 import useVerticalNav from '@menu/hooks/useVerticalNav'
@@ -81,7 +78,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
         renderExpandedMenuItemIcon={{ icon: <i className='ri-circle-fill' /> }}
         menuSectionStyles={menuSectionStyles(verticalNavOptions, theme)}
       >
-        <MenuItem href={`https://insight.airatix.id/en/dashboards/crm`} icon={<i className='ri-home-smile-line' />}>
+        <MenuItem href={`/${locale}/dashboards/crm`} icon={<i className='ri-home-smile-line' />}>
           {dictionary['navigation'].dashboards}
         </MenuItem>
         <MenuItem href={`/${locale}/event-organizers`} icon={<i className='ri-team-line' />}>
@@ -90,7 +87,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
         <MenuItem href={`/${locale}/event-transactions`} icon={<i className='ri-exchange-dollar-line' />}>
           {dictionary['navigation'].eventTransactions}
         </MenuItem>
-        <SubMenu label="Participants" icon={<i className='ri-group-line' />}>
+        <SubMenu label='Participants' icon={<i className='ri-group-line' />}>
           <MenuItem href={`/${locale}/participants/list`}>List</MenuItem>
           <MenuItem href={`/${locale}/participants/register`}>Register</MenuItem>
         </SubMenu>
@@ -115,12 +112,12 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
           <SubMenu label={dictionary['navigation'].user} icon={<i className='ri-user-line' />}>
             <MenuItem href={`/${locale}/user/list`}>{dictionary['navigation'].list}</MenuItem>
             <MenuItem href={`/${locale}/user/register`}>{dictionary['navigation'].registerUser}</MenuItem>
-            <MenuItem href={`/${locale}/user/view`}>{dictionary['navigation'].view}</MenuItem>
+            {/* <MenuItem href={`/${locale}/user/view`}>{dictionary['navigation'].view}</MenuItem> */}
           </SubMenu>
-          <SubMenu label={dictionary['navigation'].rolesPermissions} icon={<i className='ri-lock-2-line' />}>
+          {/* <SubMenu label={dictionary['navigation'].rolesPermissions} icon={<i className='ri-lock-2-line' />}>
             <MenuItem href={`/${locale}/apps/roles`}>{dictionary['navigation'].roles}</MenuItem>
             <MenuItem href={`/${locale}/apps/permissions`}>{dictionary['navigation'].permissions}</MenuItem>
-          </SubMenu>
+          </SubMenu> */}
         </MenuSection>
         {/* <MenuSection label={dictionary['navigation'].formsAndTables}>
           <MenuItem href={`/${locale}/forms/form-layouts`} icon={<i className='ri-layout-4-line' />}>
@@ -198,7 +195,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
             {dictionary['navigation'].documentation}
           </MenuItem>
           <SubMenu label={dictionary['navigation'].others} icon={<i className='ri-more-line' />}>
-            <MenuItem suffix={<Chip label='New' size='small' color='info' />}>
+            <MenuItem suffix={<i className='ri-circle-fill' />}>
               {dictionary['navigation'].itemWithBadge}
             </MenuItem>
             <MenuItem
