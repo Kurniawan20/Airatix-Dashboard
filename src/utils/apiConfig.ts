@@ -19,7 +19,8 @@ export const API_ENDPOINTS = {
   },
   USERS: {
     ALL: `${AUTH_API_BASE_URL}/users`,
-    BY_ID: (id: string) => `${AUTH_API_BASE_URL}/users/${id}`
+    BY_ID: (id: string) => `${AUTH_API_BASE_URL}/users/${id}`,
+    PROFILE: `${AUTH_API_BASE_URL}/users/me`
   },
   TRANSACTIONS: {
     ALL: `${TRANSACTION_API_BASE_URL}/transactions`,
@@ -415,6 +416,66 @@ export const getAllUsersApi = async () => {
     return {
       success: false,
       error: 'An unexpected error occurred while fetching users.'
+    }
+  }
+}
+
+/**
+ * Get user profile API call
+ * @returns The response from the get user profile API
+ */
+export const getUserProfileApi = async () => {
+  try {
+    console.log('Fetching user profile from:', API_ENDPOINTS.USERS.PROFILE)
+    const response = await fetchWithAuthFallback(API_ENDPOINTS.USERS.PROFILE)
+
+    console.log('API response status:', response.status)
+
+    if (!response.ok) {
+      // Handle different error responses
+      if (response.status === 401) {
+        console.log('User is not authenticated (401)')
+
+        return {
+          success: false,
+          error: 'Unauthorized. Please log in again.',
+          status: 401
+        }
+      } else if (response.status === 403) {
+        console.log('User does not have permission (403)')
+
+        return {
+          success: false,
+          error: 'Access denied. You do not have permission to view profile.',
+          status: 403
+        }
+      } else {
+        console.log(`API returned error status: ${response.status}`)
+
+        return {
+          success: false,
+          error: 'Failed to fetch profile. Please try again later.',
+          status: response.status
+        }
+      }
+    }
+
+    // Parse the JSON response
+    const data = await response.json()
+    console.log('User profile data:', data)
+
+    return {
+      success: true,
+      data,
+      status: response.status
+    }
+  } catch (error) {
+    console.error('Error fetching user profile:', error)
+
+    return {
+      success: false,
+      error: 'An error occurred while fetching the profile.',
+      status: 500
     }
   }
 }

@@ -30,6 +30,7 @@ export interface UserRegistrationData {
   password: string;
   firstName: string;
   lastName: string;
+  role: UserRole;
 }
 
 export interface UserRegistrationResponse {
@@ -40,4 +41,13 @@ export interface UserRegistrationResponse {
     email: string;
   };
   error?: string;
+}
+
+export interface UserProfileResponse {
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+  id: string;
+  email: string;
+  username: string;
 }
