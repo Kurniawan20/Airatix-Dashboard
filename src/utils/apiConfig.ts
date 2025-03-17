@@ -7,7 +7,7 @@
 import type { User } from '@/types/user'
 
 // Base API URLs
-const AUTH_API_BASE_URL = 'http://airatix.id:8088/api'
+const AUTH_API_BASE_URL = 'https://insight.airatix.id:8089/api'
 const TRANSACTION_API_BASE_URL = 'https://airatix.id:8000/public'
 
 // API Endpoints
@@ -626,7 +626,7 @@ export const updateUserApi = async (userId: string, userData: Partial<User>) => 
 export const getAllParticipantsApi = async () => {
   try {
     const token = getAuthToken()
-    
+
     if (!token) {
       return {
         success: false,
@@ -637,18 +637,19 @@ export const getAllParticipantsApi = async () => {
     }
 
     const response = await fetchWithAuthFallback(API_ENDPOINTS.PARTICIPANTS.ALL)
-    
+
     if (!response.ok) {
       // Handle error response
       let errorMessage = 'Failed to fetch participants'
-      
+
       try {
         const errorData = await response.json()
+
         errorMessage = errorData.message || errorMessage
       } catch (e) {
         // If parsing JSON fails, use the default error message
       }
-      
+
       return {
         success: false,
         error: errorMessage,
@@ -752,7 +753,7 @@ export const registerParticipantApi = async (participantData: {
     console.log('Register participant API call with data:', participantData)
 
     const token = getAuthToken()
-    
+
     if (!token) {
       return {
         success: false,
@@ -770,14 +771,15 @@ export const registerParticipantApi = async (participantData: {
     if (!response.ok) {
       // Handle error response
       let errorMessage = 'Failed to register participant'
-      
+
       try {
         const errorData = await response.json()
+
         errorMessage = errorData.message || errorMessage
       } catch (e) {
         // If parsing JSON fails, use the default error message
       }
-      
+
       return {
         success: false,
         error: errorMessage,
