@@ -32,7 +32,8 @@ import {
   getSortedRowModel,
   getFilteredRowModel,
   type SortingState,
-  type ColumnFiltersState
+  type ColumnFiltersState,
+  type FilterFn
 } from '@tanstack/react-table'
 
 // Types Import
@@ -44,25 +45,25 @@ interface ParticipantListTableProps {
 
 const ParticipantListTable = ({ participants }: ParticipantListTableProps) => {
   // States
-  const [sorting, setSorting] = useState<SortingState>([])
-  const [rowSelection, setRowSelection] = useState({})
-  const [globalFilter, setGlobalFilter] = useState<string>('')
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [rowSelection, setRowSelection] = useState({});
+  const [globalFilter, setGlobalFilter] = useState('');
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 10
-  })
+  });
 
   // Hooks
-  const router = useRouter()
+  const router = useRouter();
 
   // Navigate to participant details
-  const handleViewDetails = useCallback((id: string) => {
-    router.push(`/participants/details/${id}`)
-  }, [router])
+  const handleViewDetails = useCallback((id: number) => {
+    router.push(`/en/participants/details/${id}`);
+  }, [router]);
 
   // Column Definitions
-  const columnHelper = createColumnHelper<Participant>()
+  const columnHelper = createColumnHelper<Participant>();
 
   const columns = useMemo(
     () => [
@@ -90,6 +91,10 @@ const ParticipantListTable = ({ participants }: ParticipantListTableProps) => {
         header: 'Team',
         cell: info => info.getValue() || '-'
       }),
+      columnHelper.accessor('categoryClass', {
+        header: 'Category',
+        cell: info => info.getValue() || '-'
+      }),
       columnHelper.accessor('className', {
         header: 'Class',
         cell: info => info.getValue() || '-'
@@ -102,44 +107,74 @@ const ParticipantListTable = ({ participants }: ParticipantListTableProps) => {
         header: 'Vehicle Type',
         cell: info => info.getValue() || '-'
       }),
-      columnHelper.accessor('vehicleColor', {
-        header: 'Color',
-        cell: info => info.getValue() || '-'
+      columnHelper.accessor('status', {
+        header: 'Status',
+        cell: info => {
+          const status = info.getValue();
+          let color = 'primary';
+          
+          if (status === 'Approved') color = 'success';
+          if (status === 'Rejected') color = 'error';
+          
+          return (
+            <Box
+              sx={{
+                display: 'inline-block',
+                px: 2,
+                py: 0.5,
+                borderRadius: 1,
+                backgroundColor: theme => theme.palette[color as 'primary' | 'success' | 'error'].main + '20',
+                color: theme => theme.palette[color as 'primary' | 'success' | 'error'].main
+              }}
+            >
+              {status}
+            </Box>
+          );
+        }
       }),
-      columnHelper.accessor('pos', {
-        header: 'POS',
-        cell: info => info.getValue() || '-'
+      columnHelper.accessor('registrationDate', {
+        header: 'Registration Date',
+        cell: info => {
+          const date = info.getValue();
+          if (!date) return '-';
+          
+          return new Date(date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          });
+        }
       }),
       columnHelper.display({
         id: 'actions',
         header: 'Actions',
-        cell: ({ row }) => (
-          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-            <Tooltip title="View Details">
-              <IconButton 
-                color="primary" 
-                onClick={() => handleViewDetails(row.original.id)}
-                size="small"
+        cell: info => (
+          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+            <Tooltip title='View Details'>
+              <IconButton
+                size='small'
+                onClick={() => handleViewDetails(info.row.original.id)}
+                sx={{ color: 'primary.main' }}
               >
-                <Typography sx={{ fontSize: '1.2rem' }}>👁️</Typography>
+                <i className='ri-eye-line' />
               </IconButton>
             </Tooltip>
           </Box>
         )
       })
     ],
-    [columnHelper, handleViewDetails]
-  )
+    [handleViewDetails, columnHelper]
+  );
 
-  // Table Instance
+  // Create the table instance
   const table = useReactTable({
     data: participants,
     columns,
     state: {
       sorting,
       rowSelection,
-      columnFilters,
       globalFilter,
+      columnFilters,
       pagination
     },
     enableRowSelection: true,
@@ -152,8 +187,10 @@ const ParticipantListTable = ({ participants }: ParticipantListTableProps) => {
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    filterFns: {}
-  })
+    filterFns: {
+      fuzzy: () => true
+    } as Record<'fuzzy', FilterFn<any>>
+  });
 
   return (
     <Box>
@@ -169,33 +206,37 @@ const ParticipantListTable = ({ participants }: ParticipantListTableProps) => {
               </InputAdornment>
             )
           }}
-          sx={{ width: 300 }}
+          size='small'
         />
-        <Typography>
-          {table.getFilteredRowModel().rows.length} participants found
-        </Typography>
       </Box>
-      
-      <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+
+      <Paper sx={{ width: '100%', overflow: 'hidden', mb: 4 }}>
         <TableContainer sx={{ maxHeight: 600 }}>
-          <Table stickyHeader aria-label='participant table'>
+          <Table stickyHeader>
             <TableHead>
               {table.getHeaderGroups().map(headerGroup => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map(header => (
-                    <TableCell 
+                    <TableCell
                       key={header.id}
-                      onClick={header.column.getToggleSortingHandler()}
+                      colSpan={header.colSpan}
                       sx={{
-                        cursor: header.column.getCanSort() ? 'pointer' : 'default',
                         fontWeight: 'bold',
-                        '&:hover': { backgroundColor: 'action.hover' }
+                        cursor: header.column.getCanSort() ? 'pointer' : 'default',
+                        userSelect: 'none',
+                        backgroundColor: 'background.paper'
                       }}
+                      onClick={header.column.getToggleSortingHandler()}
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         {flexRender(header.column.columnDef.header, header.getContext())}
-                        {header.column.getIsSorted() === 'asc' && <i className='ri-arrow-up-s-line ml-1' />}
-                        {header.column.getIsSorted() === 'desc' && <i className='ri-arrow-down-s-line ml-1' />}
+                        {header.column.getIsSorted() ? (
+                          header.column.getIsSorted() === 'asc' ? (
+                            <i className='ri-sort-asc' style={{ marginLeft: '4px' }} />
+                          ) : (
+                            <i className='ri-sort-desc' style={{ marginLeft: '4px' }} />
+                          )
+                        ) : null}
                       </Box>
                     </TableCell>
                   ))}
@@ -203,46 +244,38 @@ const ParticipantListTable = ({ participants }: ParticipantListTableProps) => {
               ))}
             </TableHead>
             <TableBody>
-              {table.getRowModel().rows.map(row => (
-                <TableRow 
-                  key={row.id}
-                  hover
-                  sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                >
-                  {row.getVisibleCells().map(cell => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
+              {table.getRowModel().rows.length ? (
+                table.getRowModel().rows.map(row => (
+                  <TableRow key={row.id} hover>
+                    {row.getVisibleCells().map(cell => (
+                      <TableCell key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={columns.length} sx={{ textAlign: 'center' }}>
+                    <Typography variant='body1'>No participants found</Typography>
+                  </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </TableContainer>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
-          <Box>
-            <Typography variant='body2'>
-              Showing {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} to{' '}
-              {Math.min(
-                (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-                table.getFilteredRowModel().rows.length
-              )}{' '}
-              of {table.getFilteredRowModel().rows.length} entries
-            </Typography>
-          </Box>
-          <TablePagination
-            component='div'
-            count={table.getFilteredRowModel().rows.length}
-            page={table.getState().pagination.pageIndex}
-            rowsPerPage={table.getState().pagination.pageSize}
-            rowsPerPageOptions={[10, 25, 50, 100]}
-            onPageChange={(_, page) => table.setPageIndex(page)}
-            onRowsPerPageChange={e => table.setPageSize(Number(e.target.value))}
-          />
-        </Box>
+        <TablePagination
+          rowsPerPageOptions={[10, 25, 50, 100]}
+          component='div'
+          count={table.getFilteredRowModel().rows.length}
+          rowsPerPage={table.getState().pagination.pageSize}
+          page={table.getState().pagination.pageIndex}
+          onPageChange={(_, page) => table.setPageIndex(page)}
+          onRowsPerPageChange={e => table.setPageSize(Number(e.target.value))}
+        />
       </Paper>
     </Box>
-  )
-}
+  );
+};
 
-export default ParticipantListTable
+export default ParticipantListTable;

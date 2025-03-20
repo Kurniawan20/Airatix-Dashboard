@@ -30,27 +30,10 @@ import type { Participant } from '@/types/participant'
 
 // Component Imports
 import PaymentQRCode from './PaymentQRCode'
+import ParticipantDetailHeader from './ParticipantDetailHeader'
 
-// Mock data for testing
-const mockParticipant: Participant = {
-  id: '1',
-  startNumber: '0001',
-  name: 'John Doe',
-  nik: '1234567890123456',
-  phoneNumber: '+62 812-3456-7890',
-  city: 'Jakarta',
-  province: 'DKI Jakarta',
-  team: 'Speed Demons',
-  className: 'Pro Stock',
-  vehicleBrand: 'Honda',
-  vehicleType: 'Civic Type R',
-  vehicleColor: 'Red',
-  chassisNumber: 'MRHFK4850PT400001',
-  engineNumber: 'K20C1-0001',
-  pos: 'Jakarta Selatan',
-  createdAt: '2025-03-01T08:00:00Z',
-  updatedAt: '2025-03-01T08:00:00Z'
-}
+// API Imports
+import { getParticipantByIdApi } from '@/utils/apiConfig'
 
 // Registration fee by class (in IDR)
 const registrationFeeByClass: Record<string, number> = {
@@ -88,24 +71,12 @@ const ParticipantDetail = () => {
       setError(null)
 
       try {
-        // For development/testing, use mock data
-        // In production, uncomment the API call and import getParticipantByIdApi from '@/utils/apiConfig'
-        // const response = await getParticipantByIdApi(participantId)
+        const response = await getParticipantByIdApi(Number(participantId))
         
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        
-        // Mock successful response
-        const mockResponse = {
-          success: true,
-          data: mockParticipant,
-          message: 'Participant fetched successfully'
-        }
-
-        if (mockResponse.success) {
-          setParticipant(mockResponse.data)
+        if (response.success && response.data) {
+          setParticipant(response.data)
         } else {
-          setError('Failed to fetch participant details')
+          setError(response.error || 'Failed to fetch participant details')
         }
       } catch (err) {
         setError('An unexpected error occurred')
@@ -139,6 +110,7 @@ const ParticipantDetail = () => {
   const handlePrint = () => {
     if (printRef.current) {
       reactToPrintContent({
+        // @ts-ignore - content property is required by useReactToPrint
         content: () => printRef.current
       })
     }
@@ -200,238 +172,213 @@ const ParticipantDetail = () => {
           />
           <CardContent>
             {/* Printable content */}
-            <Box ref={printRef} sx={{ width: '100%' }}>
-              {/* Header for print */}
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 6, '@media print': { display: 'flex' } }}>
-                <Box>
-                  <Typography variant='h4' sx={{ mb: 1 }}>AIRATIX EVENT ORGANIZER</Typography>
-                  <Typography variant='body2'>Participant Registration Details</Typography>
-                  <Typography variant='body2'>Generated: {new Date().toLocaleString()}</Typography>
-                </Box>
-                <Box sx={{ textAlign: 'right' }}>
-                  <Typography variant='h6'>Registration ID: {participant.id}</Typography>
-                  <Typography variant='body2'>Start Number: {participant.startNumber}</Typography>
-                  <Typography variant='body2'>Class: {participant.className}</Typography>
-                </Box>
-              </Box>
-              
-              <Box sx={{ '@media print': { marginBottom: '20px' } }}>
-                <Typography variant='h5' sx={{ mb: 2, '@media print': { marginBottom: '10px' } }}>
-                  {participant.name}
-                </Typography>
-                <Typography variant='body1' sx={{ mb: 1 }}>
-                  {participant.team} • {participant.city}, {participant.province}
-                </Typography>
-                <Typography variant='body2' color='text.secondary'>
-                  NIK: {participant.nik} • Phone: {participant.phoneNumber}
-                </Typography>
-              </Box>
-              
-              <Divider sx={{ my: 6, '@media print': { marginTop: '20px', marginBottom: '20px' } }} />
-              
-              <Grid container spacing={6}>
-                <Grid item xs={12} md={6}>
-                  <Card sx={{ '@media print': { boxShadow: 'none', border: '1px solid #ddd' }, height: '100%' }}>
-                    <CardHeader title='Personal Information' />
-                    <CardContent>
-                      <Grid container spacing={3}>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
-                            Name
-                          </Typography>
-                          <Typography variant='body2'>{participant.name}</Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
-                            NIK
-                          </Typography>
-                          <Typography variant='body2'>{participant.nik}</Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
-                            Phone Number
-                          </Typography>
-                          <Typography variant='body2'>{participant.phoneNumber}</Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
-                            Province
-                          </Typography>
-                          <Typography variant='body2'>{participant.province}</Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
-                            City
-                          </Typography>
-                          <Typography variant='body2'>{participant.city}</Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
-                            Team
-                          </Typography>
-                          <Typography variant='body2'>{participant.team}</Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
-                            POS
-                          </Typography>
-                          <Typography variant='body2'>{participant.pos}</Typography>
-                        </Grid>
-                      </Grid>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                
-                <Grid item xs={12} md={6}>
-                  <Card sx={{ '@media print': { boxShadow: 'none', border: '1px solid #ddd' }, height: '100%' }}>
-                    <CardHeader title='Vehicle Information' />
-                    <CardContent>
-                      <Grid container spacing={3}>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
-                            Vehicle Brand
-                          </Typography>
-                          <Typography variant='body2'>{participant.vehicleBrand}</Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
-                            Vehicle Type
-                          </Typography>
-                          <Typography variant='body2'>{participant.vehicleType}</Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
-                            Vehicle Color
-                          </Typography>
-                          <Typography variant='body2'>{participant.vehicleColor}</Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
-                            Chassis Number
-                          </Typography>
-                          <Typography variant='body2'>{participant.chassisNumber}</Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
-                            Engine Number
-                          </Typography>
-                          <Typography variant='body2'>{participant.engineNumber}</Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
-                            Class
-                          </Typography>
-                          <Typography variant='body2'>{participant.className}</Typography>
-                        </Grid>
-                      </Grid>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                
-                <Grid item xs={12}>
-                  <Card sx={{ '@media print': { boxShadow: 'none', border: '1px solid #ddd' } }}>
-                    <CardHeader title='Registration Information' />
-                    <CardContent>
-                      <Grid container spacing={3}>
-                        <Grid item xs={12} sm={4}>
-                          <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
-                            Start Number
-                          </Typography>
-                          <Typography variant='body2'>{participant.startNumber}</Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                          <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
-                            Created At
-                          </Typography>
-                          <Typography variant='body2'>
-                            {new Date(participant.createdAt).toLocaleString()}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                          <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
-                            Updated At
-                          </Typography>
-                          <Typography variant='body2'>
-                            {new Date(participant.updatedAt).toLocaleString()}
-                          </Typography>
-                        </Grid>
-                      </Grid>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                
-                {/* Payment QR Code - only visible in the UI, not in print */}
-                <Grid item xs={12} md={6} sx={{ '@media print': { display: 'none' } }}>
-                  <PaymentQRCode 
-                    participant={participant} 
-                    registrationFee={getRegistrationFee(participant.className)}
-                  />
-                </Grid>
-                
-                {/* Print-specific payment information */}
-                <Grid item xs={12} sx={{ display: 'none', '@media print': { display: 'block' } }}>
-                  <Card sx={{ '@media print': { boxShadow: 'none', border: '1px solid #ddd' } }}>
-                    <CardHeader title='Payment Information' />
-                    <CardContent>
-                      <Grid container spacing={3}>
-                        <Grid item xs={12} sm={4}>
-                          <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
-                            Registration Fee
-                          </Typography>
-                          <Typography variant='body2'>
-                            {new Intl.NumberFormat('id-ID', {
-                              style: 'currency',
-                              currency: 'IDR',
-                              minimumFractionDigits: 0
-                            }).format(getRegistrationFee(participant.className))}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                          <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
-                            Payment Status
-                          </Typography>
-                          <Typography variant='body2'>Pending Payment</Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={4}>
-                          <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
-                            Reference ID
-                          </Typography>
-                          <Typography variant='body2'>REG-{participant.id}</Typography>
-                        </Grid>
-                      </Grid>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                
-                {/* Signature section for print */}
-                <Grid item xs={12} sx={{ display: 'none', '@media print': { display: 'block', marginTop: '30px' } }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 8 }}>
-                    <Box sx={{ textAlign: 'center', width: '200px' }}>
-                      <Typography variant='body2' sx={{ mb: 8 }}>Participant Signature</Typography>
-                      <Divider />
-                      <Typography variant='body2' sx={{ mt: 1 }}>{participant.name}</Typography>
-                    </Box>
-                    <Box sx={{ textAlign: 'center', width: '200px' }}>
-                      <Typography variant='body2' sx={{ mb: 8 }}>Event Organizer</Typography>
-                      <Divider />
-                      <Typography variant='body2' sx={{ mt: 1 }}>Airatix EO</Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-                
-                {/* Footer for print */}
-                <Grid item xs={12} sx={{ display: 'none', '@media print': { display: 'block', marginTop: '50px' } }}>
-                  <Box sx={{ borderTop: '1px solid #ddd', pt: 2, textAlign: 'center' }}>
-                    <Typography variant='caption'>
-                      This document is electronically generated and does not require a physical signature.
-                    </Typography>
-                    <Typography variant='caption' display='block'>
-                      {new Date().getFullYear()} Airatix Event Organizer. All rights reserved.
-                    </Typography>
-                  </Box>
-                </Grid>
+            <Grid container spacing={6} ref={printRef}>
+              {/* Participant Header */}
+              <Grid item xs={12}>
+                <ParticipantDetailHeader participant={participant} />
               </Grid>
-            </Box>
+              
+              <Grid item xs={12} md={6}>
+                <Card sx={{ '@media print': { boxShadow: 'none', border: '1px solid #ddd' }, height: '100%' }}>
+                  <CardHeader title='Personal Information' />
+                  <CardContent>
+                    <Grid container spacing={3}>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
+                          Name
+                        </Typography>
+                        <Typography variant='body2'>{participant.name}</Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
+                          NIK
+                        </Typography>
+                        <Typography variant='body2'>{participant.nik}</Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
+                          Phone Number
+                        </Typography>
+                        <Typography variant='body2'>{participant.phoneNumber}</Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
+                          Province
+                        </Typography>
+                        <Typography variant='body2'>{participant.province}</Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
+                          City
+                        </Typography>
+                        <Typography variant='body2'>{participant.city}</Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
+                          Team
+                        </Typography>
+                        <Typography variant='body2'>{participant.team}</Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
+                          POS
+                        </Typography>
+                        <Typography variant='body2'>{participant.pos}</Typography>
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
+              </Grid>
+              
+              <Grid item xs={12} md={6}>
+                <Card sx={{ '@media print': { boxShadow: 'none', border: '1px solid #ddd' }, height: '100%' }}>
+                  <CardHeader title='Vehicle Information' />
+                  <CardContent>
+                    <Grid container spacing={3}>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
+                          Vehicle Brand
+                        </Typography>
+                        <Typography variant='body2'>{participant.vehicleBrand}</Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
+                          Vehicle Type
+                        </Typography>
+                        <Typography variant='body2'>{participant.vehicleType}</Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
+                          Vehicle Color
+                        </Typography>
+                        <Typography variant='body2'>{participant.vehicleColor}</Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
+                          Chassis Number
+                        </Typography>
+                        <Typography variant='body2'>{participant.chassisNumber}</Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
+                          Engine Number
+                        </Typography>
+                        <Typography variant='body2'>{participant.engineNumber}</Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
+                          Class
+                        </Typography>
+                        <Typography variant='body2'>{participant.className}</Typography>
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
+              </Grid>
+              
+              <Grid item xs={12}>
+                <Card sx={{ '@media print': { boxShadow: 'none', border: '1px solid #ddd' } }}>
+                  <CardHeader title='Registration Information' />
+                  <CardContent>
+                    <Grid container spacing={3}>
+                      <Grid item xs={12} sm={4}>
+                        <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
+                          Start Number
+                        </Typography>
+                        <Typography variant='body2'>{participant.startNumber}</Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={4}>
+                        <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
+                          Registration Date
+                        </Typography>
+                        <Typography variant='body2'>
+                          {new Date(participant.registrationDate).toLocaleString()}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={4}>
+                        <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
+                          Status
+                        </Typography>
+                        <Typography variant='body2'>
+                          {participant.status}
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
+              </Grid>
+              
+              {/* Payment QR Code - only visible in the UI, not in print */}
+              <Grid item xs={12} md={6} sx={{ '@media print': { display: 'none' } }}>
+                <PaymentQRCode 
+                  participant={participant} 
+                  registrationFee={getRegistrationFee(participant.className)}
+                />
+              </Grid>
+              
+              {/* Print-specific payment information */}
+              <Grid item xs={12} sx={{ display: 'none', '@media print': { display: 'block' } }}>
+                <Card sx={{ '@media print': { boxShadow: 'none', border: '1px solid #ddd' } }}>
+                  <CardHeader title='Payment Information' />
+                  <CardContent>
+                    <Grid container spacing={3}>
+                      <Grid item xs={12} sm={4}>
+                        <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
+                          Registration Fee
+                        </Typography>
+                        <Typography variant='body2'>
+                          {new Intl.NumberFormat('id-ID', {
+                            style: 'currency',
+                            currency: 'IDR',
+                            minimumFractionDigits: 0
+                          }).format(getRegistrationFee(participant.className))}
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={4}>
+                        <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
+                          Payment Status
+                        </Typography>
+                        <Typography variant='body2'>Pending Payment</Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={4}>
+                        <Typography variant='subtitle2' sx={{ color: 'text.primary' }}>
+                          Reference ID
+                        </Typography>
+                        <Typography variant='body2'>REG-{participant.id}</Typography>
+                      </Grid>
+                    </Grid>
+                  </CardContent>
+                </Card>
+              </Grid>
+              
+              {/* Signature section for print */}
+              <Grid item xs={12} sx={{ display: 'none', '@media print': { display: 'block', marginTop: '30px' } }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 8 }}>
+                  <Box sx={{ textAlign: 'center', width: '200px' }}>
+                    <Typography variant='body2' sx={{ mb: 8 }}>Participant Signature</Typography>
+                    <Divider />
+                    <Typography variant='body2' sx={{ mt: 1 }}>{participant.name}</Typography>
+                  </Box>
+                  <Box sx={{ textAlign: 'center', width: '200px' }}>
+                    <Typography variant='body2' sx={{ mb: 8 }}>Event Organizer</Typography>
+                    <Divider />
+                    <Typography variant='body2' sx={{ mt: 1 }}>Airatix EO</Typography>
+                  </Box>
+                </Box>
+              </Grid>
+              
+              {/* Footer for print */}
+              <Grid item xs={12} sx={{ display: 'none', '@media print': { display: 'block', marginTop: '50px' } }}>
+                <Box sx={{ borderTop: '1px solid #ddd', pt: 2, textAlign: 'center' }}>
+                  <Typography variant='caption'>
+                    This document is electronically generated and does not require a physical signature.
+                  </Typography>
+                  <Typography variant='caption' display='block'>
+                    {new Date().getFullYear()} Airatix Event Organizer. All rights reserved.
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
             
             {/* Actions - not printed */}
             <Grid item xs={12} sx={{ textAlign: 'center', mt: 6, '@media print': { display: 'none' } }}>

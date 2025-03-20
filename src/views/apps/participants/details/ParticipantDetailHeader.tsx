@@ -3,7 +3,6 @@
 // MUI Imports
 import Box from '@mui/material/Box'
 import Card from '@mui/material/Card'
-import Grid from '@mui/material/Grid'
 import Avatar from '@mui/material/Avatar'
 import Typography from '@mui/material/Typography'
 import CardContent from '@mui/material/CardContent'
@@ -34,6 +33,18 @@ const ParticipantDetailHeader = ({ participant }: ParticipantDetailHeaderProps) 
     return colors[hash % colors.length] as 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info'
   }
 
+  // Get status color
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Approved':
+        return 'success'
+      case 'Rejected':
+        return 'error'
+      default:
+        return 'warning'
+    }
+  }
+
   return (
     <Card>
       <CardContent sx={{ pt: 15, display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
@@ -53,56 +64,44 @@ const ParticipantDetailHeader = ({ participant }: ParticipantDetailHeaderProps) 
           {participant.name}
         </Typography>
         
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+        <Typography variant='body2' sx={{ mb: 4 }}>
+          {participant.team}
+        </Typography>
+        
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 4 }}>
           <Chip 
-            label={`#${participant.startNumber}`} 
-            color='primary' 
-            sx={{ mr: 2, fontWeight: 600 }} 
+            label={participant.status} 
+            color={getStatusColor(participant.status) as 'success' | 'error' | 'warning'}
+            sx={{ mr: 2 }}
           />
           <Chip 
             label={participant.className} 
-            color='secondary'
-            sx={{ fontWeight: 500 }} 
+            color='primary'
           />
         </Box>
         
-        <Box sx={{ mb: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mr: 4 }}>
-            <Typography sx={{ mr: 1, color: 'text.secondary' }}>📍</Typography>
-            <Typography sx={{ color: 'text.secondary' }}>
-              {participant.city}, {participant.province}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mx: 2, mb: 2 }}>
+            <i className='ri-map-pin-line' style={{ marginRight: '8px' }} />
+            <Typography variant='body2'>{participant.city}, {participant.province}</Typography>
+          </Box>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', mx: 2, mb: 2 }}>
+            <i className='ri-phone-line' style={{ marginRight: '8px' }} />
+            <Typography variant='body2'>{participant.phoneNumber}</Typography>
+          </Box>
+          
+          <Box sx={{ display: 'flex', alignItems: 'center', mx: 2, mb: 2 }}>
+            <i className='ri-calendar-line' style={{ marginRight: '8px' }} />
+            <Typography variant='body2'>
+              {new Date(participant.registrationDate).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              })}
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', mr: 4 }}>
-            <Typography sx={{ mr: 1, color: 'text.secondary' }}>👥</Typography>
-            <Typography sx={{ color: 'text.secondary' }}>{participant.team}</Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Typography sx={{ mr: 1, color: 'text.secondary' }}>📱</Typography>
-            <Typography sx={{ color: 'text.secondary' }}>{participant.phoneNumber}</Typography>
-          </Box>
         </Box>
-        
-        <Grid container spacing={4} sx={{ textAlign: 'center' }}>
-          <Grid item xs={4}>
-            <Box sx={{ display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
-              <Typography variant='h5'>{participant.vehicleBrand}</Typography>
-              <Typography sx={{ color: 'text.secondary' }}>Brand</Typography>
-            </Box>
-          </Grid>
-          <Grid item xs={4}>
-            <Box sx={{ display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
-              <Typography variant='h5'>{participant.vehicleType}</Typography>
-              <Typography sx={{ color: 'text.secondary' }}>Type</Typography>
-            </Box>
-          </Grid>
-          <Grid item xs={4}>
-            <Box sx={{ display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
-              <Typography variant='h5'>{participant.vehicleColor}</Typography>
-              <Typography sx={{ color: 'text.secondary' }}>Color</Typography>
-            </Box>
-          </Grid>
-        </Grid>
       </CardContent>
     </Card>
   )

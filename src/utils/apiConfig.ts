@@ -8,30 +8,38 @@ import type { User } from '@/types/user'
 
 // Base API URLs
 const AUTH_API_BASE_URL = process.env.NEXT_PUBLIC_AUTH_API_BASE_URL || 'https://insight.airatix.id:8089/api'
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://airatix.id:8000/public'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://airatix.id:8000/api'
 
 // API Endpoints
 export const API_ENDPOINTS = {
   AUTH: {
     LOGIN: `${AUTH_API_BASE_URL}/auth/login`,
+    REGISTER: `${AUTH_API_BASE_URL}/auth/register`,
+    REFRESH_TOKEN: `${AUTH_API_BASE_URL}/auth/refresh-token`,
     LOGOUT: `${AUTH_API_BASE_URL}/auth/logout`,
-    REGISTER: `${AUTH_API_BASE_URL}/auth/register`
+    RESET_PASSWORD: `${AUTH_API_BASE_URL}/auth/reset-password`,
+    FORGOT_PASSWORD: `${AUTH_API_BASE_URL}/auth/forgot-password`,
+    ME: `${AUTH_API_BASE_URL}/users/me`
   },
   USERS: {
     ALL: `${AUTH_API_BASE_URL}/users`,
-    BY_ID: (id: string) => `${AUTH_API_BASE_URL}/users/${id}`,
-    PROFILE: `${AUTH_API_BASE_URL}/users/me`
+    GET_ALL: `${AUTH_API_BASE_URL}/users`,
+    GET_BY_ID: (id: number) => `${AUTH_API_BASE_URL}/users/${id}`,
+    CREATE: `${AUTH_API_BASE_URL}/users`,
+    UPDATE: (id: number) => `${AUTH_API_BASE_URL}/users/${id}`,
+    DELETE: (id: number) => `${AUTH_API_BASE_URL}/users/${id}`
+  },
+  PARTICIPANTS: {
+    ALL: `${AUTH_API_BASE_URL}/participants`,
+    REGISTER: `${AUTH_API_BASE_URL}/participants`,
+    GET_BY_ID: (id: number) => `${AUTH_API_BASE_URL}/participants/${id}`,
+    GET_NEXT_START_NUMBER: `${AUTH_API_BASE_URL}/participants/next-start-number`
   },
   TRANSACTIONS: {
     ALL: `${API_BASE_URL}/transactions`,
     ORGANIZER: (organizerId: string | number) => `${API_BASE_URL}/organizers/${organizerId}/transactions`,
-    EVENT: (eventId: string | number, page: number = 1) =>
-      `${API_BASE_URL}/events/${eventId}/transactions?page=${page}`
-  },
-  PARTICIPANTS: {
-    ALL: `${AUTH_API_BASE_URL}/participants`,
-    BY_ID: (id: string) => `${AUTH_API_BASE_URL}/participants/${id}`,
-    REGISTER: `${AUTH_API_BASE_URL}/participants/register`
+    EVENT: (eventId: string | number, page: number = 1) => `${API_BASE_URL}/events/${eventId}/transactions?page=${page}`,
+    MONTHLY_GROSS: (year: number = new Date().getFullYear()) => `${API_BASE_URL}/transactions/monthly-gross?year=${year}`
   }
 }
 
@@ -103,7 +111,7 @@ export const loginApi = async (username: string, password: string) => {
       status: response.status,
       error: null
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login API error:', error)
 
     return {
@@ -362,120 +370,98 @@ export const fetchWithAuthFallback = async (url: string, options: RequestInit = 
 
 /**
  * Get all users API call
- * @returns The response from the get all users API
+ * @returns The list of users or error
  */
 export const getAllUsersApi = async () => {
   try {
-    console.log('Fetching users from:', API_ENDPOINTS.USERS.ALL)
-    const response = await fetchWithAuthFallback(API_ENDPOINTS.USERS.ALL)
+    console.log('Get all users API call')
 
-    console.log('API response status:', response.status)
+    const response = await fetchWithAuthFallback(API_ENDPOINTS.USERS.GET_ALL, {
+      method: 'GET'
+    })
 
     if (!response.ok) {
-      // Handle different error responses
+      let errorMessage = 'Failed to fetch users'
+
       if (response.status === 401) {
-        console.log('User is not authenticated (401)')
-
-        return {
-          success: false,
-          error: 'Unauthorized. Please log in again.',
-          status: 401
-        }
+        errorMessage = 'Unauthorized. Please login again.'
       } else if (response.status === 403) {
-        console.log('User does not have permission (403)')
+        errorMessage = 'You do not have permission to access this resource.'
+      }
 
-        return {
-          success: false,
-          error: 'Access denied. You do not have permission to view users.',
-          status: 403
-        }
-      } else {
-        console.log(`API returned error status: ${response.status}`)
-
-        return {
-          success: false,
-          error: 'Failed to fetch users. Please try again later.',
-          status: response.status
-        }
+      return {
+        success: false,
+        error: errorMessage
       }
     }
 
-    // Parse the response
+    // Parse the JSON response
     const data = await response.json()
 
-    console.log('API response data:', data ? 'Data received' : 'No data')
+    console.log('Users data:', data)
 
-    // The API returns an array directly, not wrapped in a data property
+    // Handle different response formats
+    // Some APIs return data directly, others wrap it in a data property
+    const usersData = data.data || data
+
     return {
       success: true,
-      data: data // Use the array directly as the data property
+      data: usersData
     }
   } catch (error) {
-    console.error('Error fetching users:', error)
+    console.error('Get all users API error:', error)
 
     return {
       success: false,
-      error: 'An unexpected error occurred while fetching users.'
+      error: 'An unexpected error occurred while fetching users'
     }
   }
 }
 
 /**
  * Get user profile API call
- * @returns The response from the get user profile API
+ * @returns The user profile data or error
  */
 export const getUserProfileApi = async () => {
   try {
-    console.log('Fetching user profile from:', API_ENDPOINTS.USERS.PROFILE)
-    const response = await fetchWithAuthFallback(API_ENDPOINTS.USERS.PROFILE)
+    console.log('Get user profile API call')
 
-    console.log('API response status:', response.status)
+    const response = await fetchWithAuthFallback(API_ENDPOINTS.AUTH.ME, {
+      method: 'GET'
+    })
 
     if (!response.ok) {
-      // Handle different error responses
+      let errorMessage = 'Failed to fetch user profile'
+
       if (response.status === 401) {
-        console.log('User is not authenticated (401)')
+        errorMessage = 'Unauthorized. Please login again.'
+      }
 
-        return {
-          success: false,
-          error: 'Unauthorized. Please log in again.',
-          status: 401
-        }
-      } else if (response.status === 403) {
-        console.log('User does not have permission (403)')
-
-        return {
-          success: false,
-          error: 'Access denied. You do not have permission to view profile.',
-          status: 403
-        }
-      } else {
-        console.log(`API returned error status: ${response.status}`)
-
-        return {
-          success: false,
-          error: 'Failed to fetch profile. Please try again later.',
-          status: response.status
-        }
+      return {
+        success: false,
+        error: errorMessage
       }
     }
 
     // Parse the JSON response
     const data = await response.json()
+
     console.log('User profile data:', data)
+
+    // Handle different response formats
+    // Some APIs return data directly, others wrap it in a data property
+    const userData = data.data || data
 
     return {
       success: true,
-      data,
-      status: response.status
+      data: userData
     }
   } catch (error) {
-    console.error('Error fetching user profile:', error)
+    console.error('Get user profile API error:', error)
 
     return {
       success: false,
-      error: 'An error occurred while fetching the profile.',
-      status: 500
+      error: 'An unexpected error occurred while fetching user profile'
     }
   }
 }
@@ -485,10 +471,10 @@ export const getUserProfileApi = async () => {
  * @param userId The ID of the user to delete
  * @returns The response from the delete user API
  */
-export const deleteUserApi = async (userId: string) => {
+export const deleteUserApi = async (userId: number) => {
   try {
     console.log('Deleting user with ID:', userId)
-    const url = API_ENDPOINTS.USERS.BY_ID(userId)
+    const url = API_ENDPOINTS.USERS.DELETE(userId)
 
     console.log('Delete user URL:', url)
 
@@ -496,73 +482,32 @@ export const deleteUserApi = async (userId: string) => {
       method: 'DELETE'
     })
 
-    console.log('Delete API response status:', response.status)
-
     if (!response.ok) {
-      // Handle different error responses
+      let errorMessage = 'Failed to delete user'
+
       if (response.status === 401) {
-        console.log('User is not authenticated (401)')
-
-        return {
-          success: false,
-          error: 'Unauthorized. Please log in again.',
-          status: 401
-        }
+        errorMessage = 'Unauthorized. Please login again.'
       } else if (response.status === 403) {
-        console.log('User does not have permission (403)')
-
-        return {
-          success: false,
-          error: 'Access denied. You do not have permission to delete users.',
-          status: 403
-        }
+        errorMessage = 'You do not have permission to delete users.'
       } else if (response.status === 404) {
-        console.log('User not found (404)')
-
-        return {
-          success: false,
-          error: 'User not found.',
-          status: 404
-        }
-      } else {
-        console.log(`API returned error status: ${response.status}`)
-
-        return {
-          success: false,
-          error: 'Failed to delete user. Please try again later.',
-          status: response.status
-        }
+        errorMessage = 'User not found.'
       }
-    }
 
-    // Check if the response has content before trying to parse it
-    const contentType = response.headers.get('content-type')
-    let data = null
-
-    // Only try to parse JSON if there's content and it's JSON
-    if (contentType && contentType.includes('application/json') && response.status !== 204) {
-      try {
-        const text = await response.text()
-
-        if (text && text.trim() !== '') {
-          data = JSON.parse(text)
-          console.log('Delete API response data:', data)
-        }
-      } catch (parseError) {
-        console.warn('Could not parse response as JSON:', parseError)
+      return {
+        success: false,
+        error: errorMessage
       }
     }
 
     return {
-      success: true,
-      data: data
+      success: true
     }
   } catch (error) {
-    console.error('Error deleting user:', error)
+    console.error('Delete user API error:', error)
 
     return {
       success: false,
-      error: 'An unexpected error occurred while deleting the user.'
+      error: 'An unexpected error occurred while deleting user'
     }
   }
 }
@@ -570,13 +515,13 @@ export const deleteUserApi = async (userId: string) => {
 /**
  * Update user API call
  * @param userId The ID of the user to update
- * @param userData The user data to update
+ * @param userData The updated user data
  * @returns The response from the update user API
  */
-export const updateUserApi = async (userId: string, userData: Partial<User>) => {
+export const updateUserApi = async (userId: number, userData: Partial<User>) => {
   try {
     console.log('Updating user with ID:', userId)
-    const url = API_ENDPOINTS.USERS.BY_ID(userId)
+    const url = API_ENDPOINTS.USERS.UPDATE(userId)
 
     console.log('Update user URL:', url)
 
@@ -588,94 +533,36 @@ export const updateUserApi = async (userId: string, userData: Partial<User>) => 
       body: JSON.stringify(userData)
     })
 
-    console.log('Update API response status:', response.status)
-
     if (!response.ok) {
-      // Handle different error responses
+      let errorMessage = 'Failed to update user'
+
       if (response.status === 401) {
-        console.log('User is not authenticated (401)')
-
-        return {
-          success: false,
-          error: 'Unauthorized. Please log in again.',
-          status: 401
-        }
+        errorMessage = 'Unauthorized. Please login again.'
       } else if (response.status === 403) {
-        console.log('User does not have permission (403)')
-
-        return {
-          success: false,
-          error: 'Access denied. You do not have permission to update users.',
-          status: 403
-        }
+        errorMessage = 'You do not have permission to update users.'
       } else if (response.status === 404) {
-        console.log('User not found (404)')
+        errorMessage = 'User not found.'
+      }
 
-        return {
-          success: false,
-          error: 'User not found.',
-          status: 404
-        }
-      } else if (response.status === 422) {
-        // Try to get validation error details
-        try {
-          const errorData = await response.json()
-
-          console.log('Validation error:', errorData)
-
-          return {
-            success: false,
-            error: errorData.message || 'Invalid user data provided.',
-            status: 422,
-            validationErrors: errorData.errors
-          }
-        } catch (parseError) {
-          return {
-            success: false,
-            error: 'Invalid user data provided.',
-            status: 422
-          }
-        }
-      } else {
-        console.log(`API returned error status: ${response.status}`)
-
-        return {
-          success: false,
-          error: 'Failed to update user. Please try again later.',
-          status: response.status
-        }
+      return {
+        success: false,
+        error: errorMessage
       }
     }
 
-    // Parse the response
-    try {
-      const text = await response.text()
+    // Parse the JSON response
+    const data = await response.json()
 
-      if (text && text.trim() !== '') {
-        const data = JSON.parse(text)
-
-        console.log('Update API response data:', data)
-
-        return {
-          success: true,
-          data: data
-        }
-      }
-    } catch (parseError) {
-      console.warn('Could not parse response as JSON:', parseError)
-    }
-
-    // If we couldn't parse the response but it was successful
     return {
       success: true,
-      data: null
+      data: data.data
     }
   } catch (error) {
-    console.error('Error updating user:', error)
+    console.error('Update user API error:', error)
 
     return {
       success: false,
-      error: 'An unexpected error occurred while updating the user.'
+      error: 'An unexpected error occurred while updating user'
     }
   }
 }
@@ -686,18 +573,11 @@ export const updateUserApi = async (userId: string, userData: Partial<User>) => 
  */
 export const getAllParticipantsApi = async () => {
   try {
-    const token = getAuthToken()
+    console.log('Get all participants API call')
 
-    if (!token) {
-      return {
-        success: false,
-        error: 'Authentication token not found',
-        status: 401,
-        data: null
-      }
-    }
-
-    const response = await fetchWithAuthFallback(API_ENDPOINTS.PARTICIPANTS.ALL)
+    const response = await fetchWithAuthFallback(API_ENDPOINTS.PARTICIPANTS.ALL, {
+      method: 'GET'
+    })
 
     if (!response.ok) {
       // Handle error response
@@ -723,7 +603,7 @@ export const getAllParticipantsApi = async () => {
 
     return {
       success: true,
-      data: data.data || [],
+      data,
       status: response.status,
       error: null
     }
@@ -741,99 +621,20 @@ export const getAllParticipantsApi = async () => {
 
 /**
  * Get participant by ID API call
- * @param id The participant ID
+ * @param id The ID of the participant to fetch
  * @returns The response from the get participant by ID API
  */
-export const getParticipantByIdApi = async (id: string) => {
+export const getParticipantByIdApi = async (id: number) => {
   try {
-    console.log('Get participant by ID API call with ID:', id)
+    console.log('Get participant by ID API call:', id)
 
-    // Validate ID
-    if (!id) {
-      return {
-        success: false,
-        error: 'Participant ID is required'
-      }
-    }
-
-    const response = await fetchWithAuthFallback(API_ENDPOINTS.PARTICIPANTS.BY_ID(id))
-
-    if (!response.ok) {
-      let errorMessage = 'Failed to fetch participant'
-
-      if (response.status === 401) {
-        errorMessage = 'Unauthorized. Please login again.'
-      } else if (response.status === 403) {
-        errorMessage = 'You do not have permission to view this participant.'
-      } else if (response.status === 404) {
-        errorMessage = 'Participant not found.'
-      }
-
-      return {
-        success: false,
-        error: errorMessage
-      }
-    }
-
-    const data = await response.json()
-
-    return {
-      success: true,
-      data: data.data
-    }
-  } catch (error) {
-    console.error('Get participant by ID API error:', error)
-
-    return {
-      success: false,
-      error: 'An unexpected error occurred while fetching the participant'
-    }
-  }
-}
-
-/**
- * Register participant API call
- * @param participantData The participant data to register
- * @returns The response from the register participant API
- */
-export const registerParticipantApi = async (participantData: {
-  startNumber: string
-  name: string
-  nik: string
-  city: string
-  province: string
-  team: string
-  className: string
-  vehicleBrand: string
-  vehicleType: string
-  vehicleColor: string
-  chassisNumber: string
-  engineNumber: string
-  pos: string
-  file?: string
-}) => {
-  try {
-    console.log('Register participant API call with data:', participantData)
-
-    const token = getAuthToken()
-
-    if (!token) {
-      return {
-        success: false,
-        error: 'Authentication token not found',
-        status: 401,
-        data: null
-      }
-    }
-
-    const response = await fetchWithAuthFallback(API_ENDPOINTS.PARTICIPANTS.REGISTER, {
-      method: 'POST',
-      body: JSON.stringify(participantData)
+    const response = await fetchWithAuthFallback(API_ENDPOINTS.PARTICIPANTS.GET_BY_ID(id), {
+      method: 'GET'
     })
 
     if (!response.ok) {
       // Handle error response
-      let errorMessage = 'Failed to register participant'
+      let errorMessage = 'Failed to fetch participant'
 
       try {
         const errorData = await response.json()
@@ -860,6 +661,91 @@ export const registerParticipantApi = async (participantData: {
       error: null
     }
   } catch (error) {
+    console.error('Get participant by ID API error:', error)
+
+    return {
+      success: false,
+      error: 'Network error occurred',
+      status: 500,
+      data: null
+    }
+  }
+}
+
+/**
+ * Register participant API call
+ * @param participantData The participant data to register
+ * @returns The response from the register participant API
+ */
+export const registerParticipantApi = async (participantData: {
+  startNumber: string
+  name: string
+  nik: string
+  city: string
+  province: string
+  team: string
+  categoryClass: string
+  className: string
+  vehicleBrand: string
+  vehicleType: string
+  vehicleColor: string
+  chassisNumber: string
+  engineNumber: string
+  phoneNumber: string
+  pos: string
+  file?: string
+}) => {
+  try {
+    console.log('Register participant API call with data:', participantData)
+
+    const token = getAuthToken()
+
+    if (!token) {
+      return {
+        success: false,
+        error: 'Authentication token not found',
+        status: 401,
+        data: null
+      }
+    }
+
+    const response = await fetchWithAuthFallback(API_ENDPOINTS.PARTICIPANTS.REGISTER, {
+      method: 'POST',
+      body: JSON.stringify(participantData)
+    })
+
+    if (!response.ok) {
+      // Handle error response
+      let errorMessage = 'Failed to register participant'
+      let validationErrors = null
+
+      try {
+        const errorData = await response.json()
+
+        errorMessage = errorData.message || errorMessage
+        validationErrors = errorData.validationErrors || null
+      } catch (e) {
+        // If parsing JSON fails, use the default error message
+      }
+
+      return {
+        success: false,
+        error: errorMessage,
+        validationErrors,
+        status: response.status,
+        data: null
+      }
+    }
+
+    const data = await response.json()
+
+    return {
+      success: true,
+      data,
+      status: response.status,
+      error: null
+    }
+  } catch (error) {
     console.error('Register participant API error:', error)
 
     return {
@@ -867,6 +753,171 @@ export const registerParticipantApi = async (participantData: {
       error: 'Network error occurred',
       status: 500,
       data: null
+    }
+  }
+}
+
+/**
+ * Get next available start number API call
+ * @returns The response from the get next start number API
+ */
+export const getNextStartNumberApi = async () => {
+  try {
+    console.log('Get next start number API call')
+
+    const response = await fetchWithAuthFallback(API_ENDPOINTS.PARTICIPANTS.GET_NEXT_START_NUMBER, {
+      method: 'GET'
+    })
+
+    if (!response.ok) {
+      // Handle error response
+      let errorMessage = 'Failed to fetch next start number'
+
+      try {
+        const errorData = await response.json()
+
+        errorMessage = errorData.message || errorMessage
+      } catch (e) {
+        // If parsing JSON fails, use the default error message
+      }
+
+      return {
+        success: false,
+        error: errorMessage,
+        status: response.status,
+        data: null
+      }
+    }
+
+    const data = await response.json()
+
+    return {
+      success: true,
+      data,
+      status: response.status,
+      error: null
+    }
+  } catch (error) {
+    console.error('Get next start number API error:', error)
+
+    return {
+      success: false,
+      error: 'Network error occurred',
+      status: 500,
+      data: null
+    }
+  }
+}
+
+/**
+ * Get user by ID API call
+ * @param userId The ID of the user to get
+ * @returns The response from the get user by ID API
+ */
+export const getUserByIdApi = async (userId: number) => {
+  try {
+    console.log('Getting user with ID:', userId)
+    const url = API_ENDPOINTS.USERS.GET_BY_ID(userId)
+
+    console.log('Get user URL:', url)
+
+    const response = await fetchWithAuthFallback(url, {
+      method: 'GET'
+    })
+
+    if (!response.ok) {
+      let errorMessage = 'Failed to get user'
+
+      if (response.status === 401) {
+        errorMessage = 'Unauthorized. Please login again.'
+      } else if (response.status === 403) {
+        errorMessage = 'You do not have permission to view this user.'
+      } else if (response.status === 404) {
+        errorMessage = 'User not found.'
+      }
+
+      return {
+        success: false,
+        error: errorMessage
+      }
+    }
+
+    // Parse the JSON response
+    const data = await response.json()
+
+    return {
+      success: true,
+      data: data.data
+    }
+  } catch (error) {
+    console.error('Get user API error:', error)
+
+    return {
+      success: false,
+      error: 'An unexpected error occurred while fetching user'
+    }
+  }
+}
+
+/**
+ * Create user API call
+ * @param userData The user data to create
+ * @returns The response from the create user API
+ */
+export const createUserApi = async (userData: Partial<User>) => {
+  try {
+    console.log('Creating user:', userData)
+    const url = API_ENDPOINTS.USERS.CREATE
+
+    console.log('Create user URL:', url)
+
+    const response = await fetchWithAuthFallback(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(userData)
+    })
+
+    if (!response.ok) {
+      let errorMessage = 'Failed to create user'
+      let validationErrors = null
+
+      if (response.status === 401) {
+        errorMessage = 'Unauthorized. Please login again.'
+      } else if (response.status === 403) {
+        errorMessage = 'You do not have permission to create users.'
+      } else if (response.status === 422) {
+        try {
+          const errorData = await response.json()
+
+          errorMessage = errorData.message || errorMessage
+          validationErrors = errorData.errors || null
+        } catch (e) {
+          // If parsing JSON fails, use the default error message
+        }
+      }
+
+      return {
+        success: false,
+        error: errorMessage,
+        validationErrors
+      }
+    }
+
+    // Parse the JSON response
+    const data = await response.json()
+
+    return {
+      success: true,
+      data: data.data
+    }
+  } catch (error) {
+    console.error('Create user API error:', error)
+
+    return {
+      success: false,
+      error: 'An unexpected error occurred while creating user'
     }
   }
 }

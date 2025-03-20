@@ -57,10 +57,12 @@ const UserProfilePage = () => {
       // Transform API response to match the expected Data format
       const transformedData: Data = {
         profileHeader: {
-          fullName: `${userData.firstName} ${userData.lastName}`,
+          fullName: userData.firstName && userData.lastName 
+            ? `${userData.firstName} ${userData.lastName}` 
+            : userData.username || userData.email?.split('@')[0] || 'User',
           coverImg: '/images/pages/profile-banner.png',
           profileImg: '/images/avatars/1.png',
-          designation: userData.role,
+          designation: userData.role || 'User',
           designationIcon: 'ri-briefcase-line'
         },
         users: {
@@ -69,29 +71,31 @@ const UserProfilePage = () => {
               {
                 icon: 'ri-user-3-line',
                 property: 'full name',
-                value: `${userData.firstName} ${userData.lastName}`
+                value: userData.firstName && userData.lastName 
+                  ? `${userData.firstName} ${userData.lastName}` 
+                  : userData.username || userData.email?.split('@')[0] || 'User'
               },
               {
                 icon: 'ri-mail-line',
                 property: 'email',
-                value: userData.email
+                value: userData.email || 'No email provided'
               },
               {
                 icon: 'ri-user-3-line',
                 property: 'username',
-                value: userData.username
+                value: userData.username || userData.email?.split('@')[0] || 'User'
               },
               {
                 icon: 'ri-government-line',
                 property: 'role',
-                value: userData.role
+                value: userData.role || 'User'
               }
             ],
             contacts: [
               {
                 icon: 'ri-mail-line',
                 property: 'email',
-                value: userData.email
+                value: userData.email || 'No email provided'
               }
             ],
             teams: [],
@@ -99,7 +103,7 @@ const UserProfilePage = () => {
               {
                 icon: 'ri-user-3-line',
                 property: 'user id',
-                value: userData.id
+                value: userData.id?.toString() || 'N/A'
               }
             ],
             teamsTech: [],

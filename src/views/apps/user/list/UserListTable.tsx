@@ -60,7 +60,6 @@ import type { Locale } from '@configs/i18n'
 
 // Component Imports
 import TableFilters from './TableFilters'
-import OptionMenu from '@core/components/option-menu'
 import CustomAvatar from '@core/components/mui/Avatar'
 
 // Util Imports
@@ -179,12 +178,13 @@ const UserListTable = ({ tableData }: { tableData?: User[] }) => {
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  
+
   // Edit user states
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [userToEdit, setUserToEdit] = useState<User | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
   const [updateError, setUpdateError] = useState<string | null>(null)
+
   const [editFormData, setEditFormData] = useState({
     firstName: '',
     lastName: '',
@@ -193,6 +193,7 @@ const UserListTable = ({ tableData }: { tableData?: User[] }) => {
     role: '',
     isActive: true
   })
+
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
   // Set data when tableData changes
@@ -201,13 +202,14 @@ const UserListTable = ({ tableData }: { tableData?: User[] }) => {
       setData(tableData)
       setFilteredData(tableData)
     }
+
     setIsLoading(false)
   }, [tableData])
 
   // Update filteredData when globalFilter or data changes
   useEffect(() => {
     let newFilteredData = [...data]
-    
+
     if (globalFilter) {
       newFilteredData = newFilteredData.filter(item => {
         return (
@@ -219,7 +221,7 @@ const UserListTable = ({ tableData }: { tableData?: User[] }) => {
         )
       })
     }
-    
+
     setFilteredData(newFilteredData)
   }, [globalFilter, data])
 
@@ -249,15 +251,16 @@ const UserListTable = ({ tableData }: { tableData?: User[] }) => {
 
     try {
       const response = await deleteUserApi(userToDelete.id)
-      
+
       if (response.success) {
         // Remove the deleted user from the data
         const updatedData = data.filter(user => user.id !== userToDelete.id)
+
         setData(updatedData)
         setFilteredData(updatedData)
         setDeleteDialogOpen(false)
         setUserToDelete(null)
-        
+
         // Show success toast notification
         toast.success(`User ${userToDelete.username} has been deleted successfully`, {
           position: 'top-right',
@@ -270,7 +273,7 @@ const UserListTable = ({ tableData }: { tableData?: User[] }) => {
       } else {
         // Handle error
         setDeleteError(response.error || 'Failed to delete user')
-        
+
         // Show error toast notification
         toast.error(response.error || 'Failed to delete user', {
           position: 'top-right',
@@ -284,7 +287,7 @@ const UserListTable = ({ tableData }: { tableData?: User[] }) => {
     } catch (error) {
       console.error('Error deleting user:', error)
       setDeleteError('An unexpected error occurred')
-      
+
       // Show error toast notification
       toast.error('An unexpected error occurred while deleting the user', {
         position: 'top-right',
@@ -326,19 +329,22 @@ const UserListTable = ({ tableData }: { tableData?: User[] }) => {
   // Handle form input changes
   const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
-    
+
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked
+
       setEditFormData(prev => ({ ...prev, [name]: checked }))
     } else {
       setEditFormData(prev => ({ ...prev, [name]: value }))
     }
-    
+
     // Clear validation error for this field when user types
     if (validationErrors[name]) {
       setValidationErrors(prev => {
         const newErrors = { ...prev }
+
         delete newErrors[name]
+
         return newErrors
       })
     }
@@ -347,57 +353,56 @@ const UserListTable = ({ tableData }: { tableData?: User[] }) => {
   // Validate form data
   const validateForm = () => {
     const errors: Record<string, string> = {}
-    
+
     if (editFormData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editFormData.email)) {
       errors.email = 'Please enter a valid email address'
     }
-    
+
     if (editFormData.password && editFormData.password.length < 8) {
       errors.password = 'Password must be at least 8 characters long'
     }
-    
+
     setValidationErrors(errors)
+
     return Object.keys(errors).length === 0
   }
 
   // Handle confirming user update
   const handleEditConfirm = async () => {
     if (!userToEdit) return
-    
+
     // Validate form
     if (!validateForm()) {
       return
     }
-    
+
     setIsUpdating(true)
     setUpdateError(null)
-    
+
     // Create update data object, only including fields that have values
     const updateData: Partial<User> = {}
-    
+
     if (editFormData.firstName) updateData.firstName = editFormData.firstName
     if (editFormData.lastName) updateData.lastName = editFormData.lastName
     if (editFormData.email) updateData.email = editFormData.email
     if (editFormData.password) updateData.password = editFormData.password
     if (editFormData.role) updateData.role = editFormData.role as UserRole
-    
+
     // Always include isActive in the update data
     updateData.active = editFormData.isActive
-    
+
     try {
       const response = await updateUserApi(userToEdit.id, updateData)
-      
+
       if (response.success && response.data) {
         // Update the user in the data array
-        const updatedData = data.map(user => 
-          user.id === userToEdit.id ? { ...user, ...response.data } : user
-        )
-        
+        const updatedData = data.map(user => (user.id === userToEdit.id ? { ...user, ...response.data } : user))
+
         setData(updatedData)
         setFilteredData(updatedData)
         setEditDialogOpen(false)
         setUserToEdit(null)
-        
+
         // Show success toast notification
         toast.success(`User ${userToEdit.username} has been updated successfully`, {
           position: 'top-right',
@@ -410,12 +415,12 @@ const UserListTable = ({ tableData }: { tableData?: User[] }) => {
       } else {
         // Handle error
         setUpdateError(response.error || 'Failed to update user')
-        
+
         // If there are validation errors from the server
         if (response.validationErrors) {
           setValidationErrors(response.validationErrors)
         }
-        
+
         // Show error toast notification
         toast.error(response.error || 'Failed to update user', {
           position: 'top-right',
@@ -429,7 +434,7 @@ const UserListTable = ({ tableData }: { tableData?: User[] }) => {
     } catch (error) {
       console.error('Error updating user:', error)
       setUpdateError('An unexpected error occurred')
-      
+
       // Show error toast notification
       toast.error('An unexpected error occurred while updating the user', {
         position: 'top-right',
@@ -446,6 +451,7 @@ const UserListTable = ({ tableData }: { tableData?: User[] }) => {
 
   // Define columns after the handler functions are defined
   const columnHelper = createColumnHelper<User>()
+
   const columns = [
     columnHelper.accessor('id', {
       header: ({ table }) => (
@@ -473,7 +479,11 @@ const UserListTable = ({ tableData }: { tableData?: User[] }) => {
       header: 'Username',
       cell: ({ row }) => (
         <div className='flex items-center gap-3'>
-          {getAvatar({ avatar: row.original.avatar, firstName: row.original.firstName, lastName: row.original.lastName })}
+          {getAvatar({
+            avatar: row.original.avatar,
+            firstName: row.original.firstName,
+            lastName: row.original.lastName
+          })}
           <div className='flex flex-col'>
             <Typography className='font-medium' color='text.primary'>
               {row.original.username}
@@ -502,9 +512,7 @@ const UserListTable = ({ tableData }: { tableData?: User[] }) => {
     columnHelper.accessor(row => `${row.firstName} ${row.lastName}`, {
       id: 'fullName',
       header: 'Name',
-      cell: ({ row }) => (
-        <Typography>{`${row.original.firstName} ${row.original.lastName}`}</Typography>
-      ),
+      cell: ({ row }) => <Typography>{`${row.original.firstName} ${row.original.lastName}`}</Typography>,
       footer: 'Name'
     }),
     columnHelper.accessor('active', {
@@ -532,6 +540,7 @@ const UserListTable = ({ tableData }: { tableData?: User[] }) => {
       header: 'Created Date',
       cell: ({ row }) => {
         const date = new Date(row.original.createdAt)
+
         return <Typography>{date.toLocaleDateString()}</Typography>
       },
       footer: 'Created Date'
@@ -543,28 +552,13 @@ const UserListTable = ({ tableData }: { tableData?: User[] }) => {
           <IconButton onClick={() => handleEditClick(row.original)}>
             <i className='ri-edit-line text-textSecondary' />
           </IconButton>
-          <IconButton 
+          <IconButton
             onClick={() => handleDeleteClick(row.original)}
-            color="error"
-            className="hover:bg-error-100 dark:hover:bg-error-900/20"
+            color='error'
+            className='hover:bg-error-100 dark:hover:bg-error-900/20'
           >
             <i className='ri-delete-bin-7-line text-error-500' />
           </IconButton>
-          <OptionMenu
-            iconButtonProps={{ size: 'small' }}
-            options={[
-              {
-                text: 'View',
-                icon: 'ri-eye-line',
-                menuItemProps: { className: 'text-textPrimary' }
-              },
-              {
-                text: 'Suspend',
-                icon: 'ri-hand-line',
-                menuItemProps: { className: 'text-warning-500' }
-              }
-            ]}
-          />
         </div>
       ),
       footer: 'Actions'
@@ -573,7 +567,7 @@ const UserListTable = ({ tableData }: { tableData?: User[] }) => {
 
   // Hooks
   const table = useReactTable({
-    data: filteredData as User[] || [],
+    data: (filteredData as User[]) || [],
     columns,
     filterFns: {
       fuzzy: fuzzyFilter
@@ -609,14 +603,6 @@ const UserListTable = ({ tableData }: { tableData?: User[] }) => {
         <Divider />
         <div className='flex justify-between gap-4 p-5 flex-col items-start sm:flex-row sm:items-center'>
           <div className='flex gap-2'>
-            <Button
-              color='secondary'
-              variant='outlined'
-              startIcon={<i className='ri-upload-2-line' />}
-              className='max-sm:is-full'
-            >
-              Export
-            </Button>
             <Link href={getLocalizedUrl('/user/register', locale as Locale)}>
               <Button
                 color='primary'
@@ -688,7 +674,9 @@ const UserListTable = ({ tableData }: { tableData?: User[] }) => {
                       return (
                         <TableRow key={row.id} className={classnames({ selected: row.getIsSelected() })}>
                           {row.getVisibleCells().map(cell => (
-                            <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
+                            <TableCell key={cell.id}>
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
                           ))}
                         </TableRow>
                       )
@@ -745,13 +733,17 @@ const UserListTable = ({ tableData }: { tableData?: User[] }) => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeleteDialogClose} color='primary'>Cancel</Button>
-          <Button 
-            onClick={handleDeleteConfirm} 
+          <Button onClick={handleDeleteDialogClose} color='primary'>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
             disabled={isDeleting}
             color='error'
             variant='contained'
-            startIcon={isDeleting ? <CircularProgress size={20} color='inherit' /> : <i className='ri-delete-bin-7-line' />}
+            startIcon={
+              isDeleting ? <CircularProgress size={20} color='inherit' /> : <i className='ri-delete-bin-7-line' />
+            }
           >
             {isDeleting ? 'Deleting...' : 'Delete'}
           </Button>
@@ -839,19 +831,11 @@ const UserListTable = ({ tableData }: { tableData?: User[] }) => {
                   <MenuItem value='USER'>User</MenuItem>
                   <MenuItem value='MANAGER'>Manager</MenuItem>
                 </Select>
-                {validationErrors.role && (
-                  <FormHelperText>{validationErrors.role}</FormHelperText>
-                )}
+                {validationErrors.role && <FormHelperText>{validationErrors.role}</FormHelperText>}
               </FormControl>
               <FormControl fullWidth margin='normal'>
                 <FormControlLabel
-                  control={
-                    <Checkbox
-                      name='isActive'
-                      checked={editFormData.isActive}
-                      onChange={handleEditFormChange}
-                    />
-                  }
+                  control={<Checkbox name='isActive' checked={editFormData.isActive} onChange={handleEditFormChange} />}
                   label='Active'
                 />
               </FormControl>
@@ -859,9 +843,11 @@ const UserListTable = ({ tableData }: { tableData?: User[] }) => {
           </form>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleEditDialogClose} color='primary'>Cancel</Button>
-          <Button 
-            onClick={handleEditConfirm} 
+          <Button onClick={handleEditDialogClose} color='primary'>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleEditConfirm}
             disabled={isUpdating}
             color='primary'
             variant='contained'

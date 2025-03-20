@@ -4,28 +4,30 @@
  */
 
 export interface Participant {
-  id: string
-  startNumber: string // 4-digit sequential number
+  id: number
+  startNumber: string
   name: string
   nik: string
-  phoneNumber: string
   city: string
   province: string
   team: string
+  categoryClass: string
   className: string
   vehicleBrand: string
   vehicleType: string
   vehicleColor: string
   chassisNumber: string
   engineNumber: string
+  phoneNumber: string
   pos: string
-  createdAt: string
-  updatedAt: string
+  file?: string
+  registrationDate: string
+  status: 'Pending' | 'Approved' | 'Rejected'
 }
 
 export interface ParticipantResponse {
   success: boolean
-  data: Participant[]
+  data: Participant[] | Participant
   message?: string
   pagination?: {
     current_page: number
@@ -36,17 +38,20 @@ export interface ParticipantResponse {
 }
 
 export interface ParticipantRegistrationData {
+  startNumber: string
   name: string
   nik: string
-  phoneNumber: string
   city: string
   province: string
   team: string
+  categoryClass: string
   className: string
   vehicleBrand: string
   vehicleType: string
   vehicleColor: string
   chassisNumber: string
   engineNumber: string
+  phoneNumber: string
   pos: string
+  file?: string
 }

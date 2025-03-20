@@ -1,34 +1,39 @@
 'use client'
 
-// React Imports
-import { useState } from 'react'
+// React and Next Imports
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 // MUI Imports
-import Card from '@mui/material/Card'
-import Grid from '@mui/material/Grid'
-import Button from '@mui/material/Button'
-import TextField from '@mui/material/TextField'
-import CardHeader from '@mui/material/CardHeader'
-import CardContent from '@mui/material/CardContent'
-import Alert from '@mui/material/Alert'
-import CircularProgress from '@mui/material/CircularProgress'
-import MenuItem from '@mui/material/MenuItem'
-import FormControl from '@mui/material/FormControl'
-import InputLabel from '@mui/material/InputLabel'
-import Select from '@mui/material/Select'
-import FormHelperText from '@mui/material/FormHelperText'
-import Typography from '@mui/material/Typography'
+import {
+  Card,
+  Grid,
+  Button,
+  TextField,
+  CardHeader,
+  CardContent,
+  Alert,
+  CircularProgress,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Select,
+  FormHelperText,
+  Typography
+} from '@mui/material'
 
 // Third-party Imports
 import { useForm, Controller } from 'react-hook-form'
 import { valibotResolver } from '@hookform/resolvers/valibot'
 import { object, string, minLength, pipe, nonEmpty, optional } from 'valibot'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 // API Import
-import { registerParticipantApi } from '@/utils/apiConfig'
+import { registerParticipantApi, getNextStartNumberApi } from '@/utils/apiConfig'
 
 // Class Options Import
-import { classOptions } from '@/data/classOptions'
+import { classOptions, categoryClasses } from '@/data/classOptions'
 
 // Mock data for dropdowns
 const PROVINCES = [
@@ -102,6 +107,7 @@ type FormData = {
   city: string
   province: string
   team: string
+  categoryClass: string
   className: string
   vehicleBrand: string
   vehicleType: string
@@ -121,6 +127,7 @@ const schema = object({
   city: pipe(string(), nonEmpty('City is required')),
   province: pipe(string(), nonEmpty('Province is required')),
   team: pipe(string(), nonEmpty('Team is required')),
+  categoryClass: pipe(string(), nonEmpty('Category class is required')),
   className: pipe(string(), nonEmpty('Class name is required')),
   vehicleBrand: pipe(string(), nonEmpty('Vehicle brand is required')),
   vehicleType: pipe(string(), nonEmpty('Vehicle type is required')),
@@ -137,22 +144,27 @@ const RegisterParticipantForm = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [filteredClasses, setFilteredClasses] = useState(classOptions)
+  const [redirecting, setRedirecting] = useState(false)
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+  const [fetchingStartNumber, setFetchingStartNumber] = useState(true)
+  const router = useRouter()
 
   const {
     control,
     handleSubmit,
-    reset,
     watch,
     setValue,
     formState: { errors }
   } = useForm<FormData>({
     defaultValues: {
-      startNumber: '0001',
+      startNumber: '',
       name: '',
       nik: '',
       city: '',
       province: '',
       team: '',
+      categoryClass: '',
       className: '',
       vehicleBrand: '',
       vehicleType: '',
@@ -166,6 +178,93 @@ const RegisterParticipantForm = () => {
     resolver: valibotResolver(schema)
   })
 
+  // Fetch next available start number when component mounts
+  useEffect(() => {
+    const fetchNextStartNumber = async () => {
+      setFetchingStartNumber(true)
+      
+      try {
+        const response = await getNextStartNumberApi()
+        
+        if (response.success && response.data) {
+          setValue('startNumber', response.data.nextAvailableStartNumber)
+        } else {
+          console.error('Failed to fetch next start number:', response.error)
+          
+          // Fallback to default start number
+          setValue('startNumber', '0001')
+        }
+      } catch (err) {
+        console.error('Error fetching next start number:', err)
+        
+        // Fallback to default start number
+        setValue('startNumber', '0001')
+      } finally {
+        setFetchingStartNumber(false)
+      }
+    }
+
+    fetchNextStartNumber()
+  }, [setValue])
+
+  // Function to populate form with dummy data
+  const populateDummyData = () => {
+    // Select a random province
+    const randomProvince = PROVINCES[Math.floor(Math.random() * PROVINCES.length)]
+
+    // Select a random city from the province
+    const provinceCities = CITIES[randomProvince as keyof typeof CITIES] || []
+    const randomCity = provinceCities.length > 0 
+      ? provinceCities[Math.floor(Math.random() * provinceCities.length)]
+      : 'Jakarta Pusat'
+
+    // Select a random category
+    const randomCategory = categoryClasses[Math.floor(Math.random() * categoryClasses.length)].value
+
+    // Filter classes by the selected category
+    const categoryFilteredClasses = classOptions.filter(option => option.category === randomCategory)
+
+    // Select a random class from the filtered classes
+    const randomClass = categoryFilteredClasses.length > 0
+      ? categoryFilteredClasses[Math.floor(Math.random() * categoryFilteredClasses.length)].value
+      : ''
+
+    // Set values for all form fields
+    setValue('name', 'John Doe')
+    setValue('nik', '1234567890123456')
+    setValue('province', randomProvince)
+    setValue('city', randomCity)
+    setValue('team', 'Team Racing Champions')
+    setValue('categoryClass', randomCategory)
+
+    // We need to wait for the filtered classes to update before setting the class name
+    setTimeout(() => {
+      setValue('className', randomClass)
+    }, 100)
+
+    setValue('vehicleBrand', 'Toyota')
+    setValue('vehicleType', 'Supra')
+    setValue('vehicleColor', 'Red')
+    setValue('chassisNumber', 'CHAS' + Math.floor(Math.random() * 10000000))
+    setValue('engineNumber', 'ENG' + Math.floor(Math.random() * 10000000))
+    setValue('phoneNumber', '08' + Math.floor(Math.random() * 1000000000))
+    setValue('pos', 'Jakarta')
+  }
+
+  // Watch for category class changes to filter class options
+  const selectedCategory = watch('categoryClass')
+
+  useEffect(() => {
+    if (selectedCategory) {
+      const filtered = classOptions.filter(option => option.category === selectedCategory)
+      setFilteredClasses(filtered)
+      // Reset class selection when category changes
+      setValue('className', '')
+    } else {
+      setFilteredClasses(classOptions)
+    }
+  }, [selectedCategory, setValue])
+
   // Watch province to update cities
   const selectedProvince = watch('province')
 
@@ -173,27 +272,212 @@ const RegisterParticipantForm = () => {
     setLoading(true)
     setError(null)
     setSuccess(null)
+    setValidationErrors({})
 
     try {
+      // Call the API to register the participant
       const response = await registerParticipantApi(data)
-
+      
       if (response.success) {
-        setSuccess('Participant registered successfully')
-        reset() // Reset form fields
+        setSuccess('Participant registered successfully! Redirecting to details page...')
+        generatePDF(data)
+        
+        // Store participant data in localStorage for the details page to access
+        const participantData = {
+          ...response.data,
+          registrationDate: response.data.registrationDate || new Date().toISOString()
+        }
+        
+        // Save to localStorage with a key that includes the ID
+        localStorage.setItem(`participant_${response.data.id}`, JSON.stringify(participantData))
+        
+        // Also save the latest registered participant ID for easy access
+        localStorage.setItem('latest_registered_participant_id', response.data.id.toString())
+        
+        // Set redirecting state to show loading indicator
+        setRedirecting(true)
+        
+        // Redirect to details page after a short delay
+        setTimeout(() => {
+          router.push(`/en/participants/details/${response.data.id}`)
+        }, 2000)
       } else {
-        setError(response.error || 'Registration failed')
+        // Handle API error
+        if (response.status === 400 && response.validationErrors) {
+          setValidationErrors(response.validationErrors)
+          setError('Validation failed. Please check the form for errors.')
+        } else if (response.status === 409) {
+          setError(response.error || 'A participant with this NIK or start number already exists.')
+        } else if (response.status === 401 || response.status === 403) {
+          setError('You are not authorized to register participants.')
+        } else {
+          setError(response.error || 'Failed to register participant')
+        }
       }
-    } catch (err: any) {
-      setError('An unexpected error occurred')
-      console.error('Register error:', err)
+    } catch (err) {
+      console.error('Error registering participant:', err)
+
+      setError('An unexpected error occurred. Please try again later.')
+      
+      // If API is not available, still allow PDF generation
+      generatePDF(data)
     } finally {
       setLoading(false)
     }
   }
 
+  // Function to generate PDF
+  const generatePDF = (data: FormData) => {
+    try {
+      // Create a new PDF document
+      const doc = new jsPDF();
+      
+      // Add title
+      doc.setFontSize(20)
+      doc.setTextColor(40, 40, 40)
+      doc.text('Participant Registration Form', 105, 20, { align: 'center' })
+      
+      // Add event logo or header
+      doc.setFontSize(12)
+      doc.setTextColor(80, 80, 80)
+      doc.text('Drag Racing Event Registration', 105, 30, { align: 'center' })
+      
+      // Add date
+      const today = new Date()
+      doc.setFontSize(10)
+      doc.text(`Registration Date: ${today.toLocaleDateString()}`, 105, 40, { align: 'center' })
+      
+      // Add start number in a box
+      doc.setFillColor(66, 66, 245) // Primary color
+      doc.setDrawColor(66, 66, 245)
+      doc.rect(75, 45, 60, 25, 'F')
+      doc.setTextColor(255, 255, 255)
+      doc.setFontSize(16)
+      doc.text(`Start Number: #${data.startNumber}`, 105, 60, { align: 'center' })
+      
+      // Add participant information
+      doc.setTextColor(40, 40, 40)
+      doc.setFontSize(14)
+      doc.text('Participant Information', 20, 80)
+      
+      doc.setFontSize(10)
+      doc.setDrawColor(220, 220, 220)
+      doc.line(20, 85, 190, 85)
+      
+      // Create table for participant info
+      const participantInfo = [
+        ['Name', data.name],
+        ['NIK', data.nik],
+        ['Province', data.province],
+        ['City', data.city],
+        ['Team', data.team],
+        ['Phone Number', data.phoneNumber],
+        ['POS', data.pos]
+      ]
+      
+      // Use autoTable directly
+      autoTable(doc, {
+        startY: 90,
+        head: [['Field', 'Value']],
+        body: participantInfo,
+        theme: 'grid',
+        headStyles: { fillColor: [66, 66, 245], textColor: [255, 255, 255] },
+        styles: { fontSize: 10 }
+      })
+      
+      // Add class information
+      const finalY = (doc as any).lastAutoTable.finalY || 150
+      
+      doc.setFontSize(14)
+      doc.text('Class Information', 20, finalY + 10)
+      
+      doc.setFontSize(10)
+      doc.line(20, finalY + 15, 190, finalY + 15)
+      
+      // Create table for class info
+      const classInfo = [
+        ['Category Class', data.categoryClass],
+        ['Class Name', data.className]
+      ]
+      
+      autoTable(doc, {
+        startY: finalY + 20,
+        head: [['Field', 'Value']],
+        body: classInfo,
+        theme: 'grid',
+        headStyles: { fillColor: [66, 66, 245], textColor: [255, 255, 255] },
+        styles: { fontSize: 10 }
+      })
+      
+      // Add vehicle information
+      const finalY2 = (doc as any).lastAutoTable.finalY || 200
+      
+      doc.setFontSize(14)
+      doc.text('Vehicle Information', 20, finalY2 + 10)
+      
+      doc.setFontSize(10)
+      doc.line(20, finalY2 + 15, 190, finalY2 + 15)
+      
+      // Create table for vehicle info
+      const vehicleInfo = [
+        ['Vehicle Brand', data.vehicleBrand],
+        ['Vehicle Type', data.vehicleType],
+        ['Vehicle Color', data.vehicleColor],
+        ['Chassis Number', data.chassisNumber],
+        ['Engine Number', data.engineNumber]
+      ]
+      
+      autoTable(doc, {
+        startY: finalY2 + 20,
+        head: [['Field', 'Value']],
+        body: vehicleInfo,
+        theme: 'grid',
+        headStyles: { fillColor: [66, 66, 245], textColor: [255, 255, 255] },
+        styles: { fontSize: 10 }
+      })
+      
+      // Add footer
+      const finalY3 = (doc as any).lastAutoTable.finalY || 250
+      
+      doc.setFontSize(8)
+      doc.setTextColor(100, 100, 100)
+      doc.text('This is an official registration document. Please keep it for your records.', 105, finalY3 + 15, { align: 'center' })
+      
+      // Add signature fields
+      doc.setFontSize(10)
+      doc.setTextColor(40, 40, 40)
+      doc.text('Participant Signature', 50, finalY3 + 30, { align: 'center' })
+      doc.text('Official Signature', 150, finalY3 + 30, { align: 'center' })
+      
+      doc.line(20, finalY3 + 45, 80, finalY3 + 45) // Participant signature line
+      doc.line(120, finalY3 + 45, 180, finalY3 + 45) // Official signature line
+      
+      // Save the PDF
+      doc.save(`participant_registration_${data.startNumber}.pdf`)
+      
+      console.log('PDF generated successfully')
+    } catch (error) {
+      console.error('Error generating PDF:', error)
+      
+      setError('Failed to generate PDF. Please try again.')
+    }
+  }
+
   return (
     <Card>
-      <CardHeader title='Register New Participant' />
+      <CardHeader 
+        title='Register Participant' 
+        action={
+          <Button 
+            variant="contained" 
+            color="secondary" 
+            onClick={populateDummyData}
+            startIcon={<i className="ri-magic-line" />}
+          >
+            Fill with Dummy Data
+          </Button>
+        }
+      />
       <CardContent>
         {error && (
           <Alert severity='error' sx={{ mb: 4 }}>
@@ -244,14 +528,21 @@ const RegisterParticipantForm = () => {
                       borderColor: 'white',
                       borderRadius: 1,
                       px: 6,
-                      py: 2
+                      py: 2,
+                      minWidth: '200px'
                     }}
                   >
-                    #{watch('startNumber')}
+                    {fetchingStartNumber ? (
+                      <CircularProgress size={30} sx={{ color: 'white' }} />
+                    ) : (
+                      `#${watch('startNumber')}`
+                    )}
                   </Typography>
 
                   <Typography variant='body2' color='white'>
-                    Pre-generated start number for this participant
+                    {fetchingStartNumber 
+                      ? 'Fetching next available start number...' 
+                      : 'Pre-generated start number for this participant'}
                   </Typography>
 
                   {/* Hidden field to store the value */}
@@ -289,8 +580,8 @@ const RegisterParticipantForm = () => {
                     {...field}
                     fullWidth
                     label='Name'
-                    error={Boolean(errors.name)}
-                    helperText={errors.name?.message}
+                    error={Boolean(errors.name) || Boolean(validationErrors.name)}
+                    helperText={errors.name?.message || validationErrors.name}
                   />
                 )}
               />
@@ -304,8 +595,8 @@ const RegisterParticipantForm = () => {
                     {...field}
                     fullWidth
                     label='NIK'
-                    error={Boolean(errors.nik)}
-                    helperText={errors.nik?.message}
+                    error={Boolean(errors.nik) || Boolean(validationErrors.nik)}
+                    helperText={errors.nik?.message || validationErrors.nik}
                   />
                 )}
               />
@@ -319,8 +610,8 @@ const RegisterParticipantForm = () => {
                     {...field}
                     fullWidth
                     label='Team'
-                    error={Boolean(errors.team)}
-                    helperText={errors.team?.message}
+                    error={Boolean(errors.team) || Boolean(validationErrors.team)}
+                    helperText={errors.team?.message || validationErrors.team}
                   />
                 )}
               />
@@ -330,7 +621,7 @@ const RegisterParticipantForm = () => {
                 name='province'
                 control={control}
                 render={({ field }) => (
-                  <FormControl fullWidth error={Boolean(errors.province)}>
+                  <FormControl fullWidth error={Boolean(errors.province) || Boolean(validationErrors.province)}>
                     <InputLabel id='province-label'>Province</InputLabel>
                     <Select
                       {...field}
@@ -359,7 +650,7 @@ const RegisterParticipantForm = () => {
                 name='city'
                 control={control}
                 render={({ field }) => (
-                  <FormControl fullWidth error={Boolean(errors.city)}>
+                  <FormControl fullWidth error={Boolean(errors.city) || Boolean(validationErrors.city)}>
                     <InputLabel id='city-label'>City</InputLabel>
                     <Select {...field} labelId='city-label' label='City' disabled={!selectedProvince}>
                       {selectedProvince &&
@@ -370,6 +661,62 @@ const RegisterParticipantForm = () => {
                         ))}
                     </Select>
                     {errors.city && <FormHelperText>{errors.city.message}</FormHelperText>}
+                  </FormControl>
+                )}
+              />
+            </Grid>
+
+            {/* Class Information Section */}
+            <Grid item xs={12}>
+              <Typography
+                variant='h6'
+                sx={{
+                  mb: 2,
+                  fontWeight: 'bold',
+                  pb: 1,
+                  borderBottom: '2px solid',
+                  borderColor: 'primary.light'
+                }}
+              >
+                Class Information
+              </Typography>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name='categoryClass'
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth error={Boolean(errors.categoryClass) || Boolean(validationErrors.categoryClass)}>
+                    <InputLabel id='category-class-label'>Category Class</InputLabel>
+                    <Select {...field} label='Category Class' labelId='category-class-label'>
+                      {categoryClasses.map(option => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {errors.categoryClass && <FormHelperText>{errors.categoryClass.message}</FormHelperText>}
+                  </FormControl>
+                )}
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <Controller
+                name='className'
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth error={Boolean(errors.className) || Boolean(validationErrors.className)}>
+                    <InputLabel id='class-name-label'>Class Name</InputLabel>
+                    <Select {...field} label='Class Name' labelId='class-name-label' disabled={!selectedCategory}>
+                      {filteredClasses.map(option => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {errors.className && <FormHelperText>{errors.className.message}</FormHelperText>}
                   </FormControl>
                 )}
               />
@@ -393,25 +740,6 @@ const RegisterParticipantForm = () => {
 
             <Grid item xs={12} sm={6}>
               <Controller
-                name='className'
-                control={control}
-                render={({ field }) => (
-                  <FormControl fullWidth error={Boolean(errors.className)}>
-                    <InputLabel id='class-name-label'>Class Name</InputLabel>
-                    <Select {...field} label='Class Name' labelId='class-name-label'>
-                      {classOptions.map(option => (
-                        <MenuItem key={option.value} value={option.value}>
-                          {option.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {errors.className && <FormHelperText>{errors.className.message}</FormHelperText>}
-                  </FormControl>
-                )}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Controller
                 name='vehicleBrand'
                 control={control}
                 render={({ field }) => (
@@ -419,8 +747,8 @@ const RegisterParticipantForm = () => {
                     {...field}
                     fullWidth
                     label='Vehicle Brand'
-                    error={Boolean(errors.vehicleBrand)}
-                    helperText={errors.vehicleBrand?.message}
+                    error={Boolean(errors.vehicleBrand) || Boolean(validationErrors.vehicleBrand)}
+                    helperText={errors.vehicleBrand?.message || validationErrors.vehicleBrand}
                   />
                 )}
               />
@@ -434,8 +762,8 @@ const RegisterParticipantForm = () => {
                     {...field}
                     fullWidth
                     label='Vehicle Type'
-                    error={Boolean(errors.vehicleType)}
-                    helperText={errors.vehicleType?.message}
+                    error={Boolean(errors.vehicleType) || Boolean(validationErrors.vehicleType)}
+                    helperText={errors.vehicleType?.message || validationErrors.vehicleType}
                   />
                 )}
               />
@@ -449,8 +777,8 @@ const RegisterParticipantForm = () => {
                     {...field}
                     fullWidth
                     label='Vehicle Color'
-                    error={Boolean(errors.vehicleColor)}
-                    helperText={errors.vehicleColor?.message}
+                    error={Boolean(errors.vehicleColor) || Boolean(validationErrors.vehicleColor)}
+                    helperText={errors.vehicleColor?.message || validationErrors.vehicleColor}
                   />
                 )}
               />
@@ -464,8 +792,8 @@ const RegisterParticipantForm = () => {
                     {...field}
                     fullWidth
                     label='Chassis Number'
-                    error={Boolean(errors.chassisNumber)}
-                    helperText={errors.chassisNumber?.message}
+                    error={Boolean(errors.chassisNumber) || Boolean(validationErrors.chassisNumber)}
+                    helperText={errors.chassisNumber?.message || validationErrors.chassisNumber}
                   />
                 )}
               />
@@ -479,8 +807,8 @@ const RegisterParticipantForm = () => {
                     {...field}
                     fullWidth
                     label='Engine Number'
-                    error={Boolean(errors.engineNumber)}
-                    helperText={errors.engineNumber?.message}
+                    error={Boolean(errors.engineNumber) || Boolean(validationErrors.engineNumber)}
+                    helperText={errors.engineNumber?.message || validationErrors.engineNumber}
                   />
                 )}
               />
@@ -511,8 +839,8 @@ const RegisterParticipantForm = () => {
                     {...field}
                     fullWidth
                     label='Phone Number'
-                    error={Boolean(errors.phoneNumber)}
-                    helperText={errors.phoneNumber?.message}
+                    error={Boolean(errors.phoneNumber) || Boolean(validationErrors.phoneNumber)}
+                    helperText={errors.phoneNumber?.message || validationErrors.phoneNumber}
                   />
                 )}
               />
@@ -526,8 +854,8 @@ const RegisterParticipantForm = () => {
                     {...field}
                     fullWidth
                     label='POS'
-                    error={Boolean(errors.pos)}
-                    helperText={errors.pos?.message}
+                    error={Boolean(errors.pos) || Boolean(validationErrors.pos)}
+                    helperText={errors.pos?.message || validationErrors.pos}
                   />
                 )}
               />
@@ -584,8 +912,8 @@ const RegisterParticipantForm = () => {
                         reader.readAsDataURL(file)
                       }
                     }}
-                    error={Boolean(errors.file)}
-                    helperText={errors.file?.message || 'Upload a file (optional). Max size: 5MB.'}
+                    error={Boolean(errors.file) || Boolean(validationErrors.file)}
+                    helperText={errors.file?.message || validationErrors.file || 'Upload a file (optional). Max size: 5MB.'}
                   />
                 )}
               />
@@ -593,14 +921,29 @@ const RegisterParticipantForm = () => {
 
             <Grid item xs={12}>
               <Button
+                fullWidth
+                size='large'
                 type='submit'
                 variant='contained'
-                size='large'
-                disabled={loading}
-                startIcon={loading ? <CircularProgress size={20} /> : null}
+                sx={{ mb: 4 }}
+                disabled={loading || redirecting}
               >
-                {loading ? 'Registering...' : 'Register Participant'}
+                {loading ? <CircularProgress size={24} /> : redirecting ? 'Redirecting...' : 'Register Participant'}
               </Button>
+              
+              {success && !redirecting && (
+                <Button
+                  fullWidth
+                  size='large'
+                  variant='outlined'
+                  color='secondary'
+                  onClick={() => generatePDF(watch())}
+                  startIcon={<i className="ri-file-pdf-line" />}
+                  sx={{ mb: 4 }}
+                >
+                  Download Registration PDF
+                </Button>
+              )}
             </Grid>
           </Grid>
         </form>

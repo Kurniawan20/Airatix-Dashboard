@@ -15,6 +15,7 @@ import TopReferralSources from '@views/dashboards/analytics/TopReferralSources'
 import WeeklySales from '@views/dashboards/analytics/WeeklySales'
 import VisitsByDay from '@views/dashboards/analytics/VisitsByDay'
 import ActivityTimeline from '@views/dashboards/analytics/ActivityTimeline'
+import PendingOrganizers from '@views/dashboards/analytics/PendingOrganizers'
 
 // Server Action Imports
 import { getServerMode } from '@core/utils/serverHelpers'
@@ -97,6 +98,9 @@ const DashboardAnalytics = () => {
       </Grid>
       <Grid item xs={12} sm={6} md={4}>
         <VisitsByDay />
+      </Grid>
+      <Grid item xs={12} sm={6} md={4}>
+        <PendingOrganizers />
       </Grid>
       <Grid item xs={12} md={8}>
         <ActivityTimeline />
