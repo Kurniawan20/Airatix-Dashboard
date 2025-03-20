@@ -281,11 +281,28 @@ const EventOrganizersPage = () => {
   }
 
   const filteredData = data.filter(item => {
-    if (filters.status === 'all') return true
-    if (filters.status === 'registered') return item.user !== null
-    if (filters.status === 'not_registered') return item.user === null
+    // List of emails to exclude
+    const excludedEmails = [
+      'pipi_pk@yahoo.com',
+      'kurniawanrisky551@gmail.com',
+      'pajar53@gmail.com',
+      'naufal@innovia.co.id',
+      'yshuarytta@gmail.com',
+      '203040029@mail.unpas.ac.id',
+      'tttt@gg.nnn'
+    ];
 
-    return true
+    // First check if the email is not in the excluded list
+    if (excludedEmails.includes(item.email)) {
+      return false;
+    }
+
+    // Then apply existing status filters
+    if (filters.status === 'all') return true;
+    if (filters.status === 'registered') return item.user !== null;
+    if (filters.status === 'not_registered') return item.user === null;
+
+    return true;
   })
 
   const table = useReactTable({
