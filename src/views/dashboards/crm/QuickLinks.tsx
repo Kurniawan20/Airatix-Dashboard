@@ -20,7 +20,7 @@ const QuickLinks = () => {
               height: 48,
               borderRadius: '50%',
               backgroundColor: 'info.light',
-              color: 'info.main'
+              color: 'white'
             }}
           >
             <i className='ri-links-line' style={{ fontSize: '1.5rem' }}></i>
