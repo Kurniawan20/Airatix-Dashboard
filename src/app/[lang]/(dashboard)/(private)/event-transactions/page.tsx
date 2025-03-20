@@ -2,6 +2,7 @@
 
 // React Imports
 import { useState, useEffect } from 'react'
+
 import { useRouter } from 'next/navigation'
 
 // MUI Imports
@@ -32,10 +33,11 @@ import { createColumnHelper, flexRender, getCoreRowModel, getPaginationRowModel,
 import { API_ENDPOINTS, fetchWithAuthFallback } from '@/utils/apiConfig'
 
 // Type Imports
-import type { OrganizerSummary, EventSummary, TransactionsResponse } from '@/types/event-transactions'
+import type { OrganizerSummary } from '@/types/event-transactions'
 
 // Style Imports
 import styles from '@core/styles/table.module.css'
+
 
 const RowOptions = ({ organizerId, transactionCount }: { organizerId: number; transactionCount: number }) => {
   const router = useRouter()
@@ -137,16 +139,21 @@ const EventTransactionsPage = () => {
         
         if (response.ok) {
           const responseText = await response.text();
+
           if (responseText) {
             try {
+
               const result = JSON.parse(responseText);
+
               console.log('Parsed transaction data:', result);
-              
-              // Filter organizers to show only IDs 1, 4, and 6
+
+              // Filter out organizers with IDs 3, 5, 6, 2, and 7
+              const excludedIds = [3, 5, 6, 2, 7];
+
               const filteredOrganizers = (result.data?.organizers || []).filter(
-                (org: OrganizerSummary) => [1, 4, 6].includes(org.organizer_id)
+                (org: OrganizerSummary) => !excludedIds.includes(org.organizer_id)
               );
-              
+
               setData(filteredOrganizers);
             } catch (parseError) {
               console.error('Error parsing JSON:', parseError);
