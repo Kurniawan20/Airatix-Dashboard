@@ -3,7 +3,6 @@
 // React Imports
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Typography } from '@mui/material'
 
 // MUI Imports
 import Card from '@mui/material/Card'
@@ -24,12 +23,13 @@ import ListItemText from '@mui/material/ListItemText'
 import TextField from '@mui/material/TextField'
 import InputAdornment from '@mui/material/InputAdornment'
 import CircularProgress from '@mui/material/CircularProgress'
+import Typography from '@mui/material/Typography'
 
 // Third-party Imports
 import { createColumnHelper, flexRender, getCoreRowModel, getPaginationRowModel, useReactTable, getFilteredRowModel } from '@tanstack/react-table'
 
 // API Config Imports
-import { API_ENDPOINTS, fetchWithAuthFallback, getAuthToken } from '@/utils/apiConfig'
+import { API_ENDPOINTS, fetchWithAuthFallback } from '@/utils/apiConfig'
 
 // Type Imports
 import type { OrganizerSummary, EventSummary, TransactionsResponse } from '@/types/event-transactions'
@@ -141,7 +141,13 @@ const EventTransactionsPage = () => {
             try {
               const result = JSON.parse(responseText);
               console.log('Parsed transaction data:', result);
-              setData(result.data?.organizers || []);
+              
+              // Filter organizers to show only IDs 1, 4, and 6
+              const filteredOrganizers = (result.data?.organizers || []).filter(
+                (org: OrganizerSummary) => [1, 4, 6].includes(org.organizer_id)
+              );
+              
+              setData(filteredOrganizers);
             } catch (parseError) {
               console.error('Error parsing JSON:', parseError);
               setError('Failed to parse transaction data');
