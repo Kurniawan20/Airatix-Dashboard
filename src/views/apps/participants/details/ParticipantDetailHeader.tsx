@@ -9,27 +9,26 @@ import CardContent from '@mui/material/CardContent'
 import Chip from '@mui/material/Chip'
 
 // Type Imports
-import type { Participant } from '@/types/participant'
+import type { Participant, ParticipantDetail } from '@/types/participant'
 
 interface ParticipantDetailHeaderProps {
   participant: Participant
+  detail?: ParticipantDetail
 }
 
-const ParticipantDetailHeader = ({ participant }: ParticipantDetailHeaderProps) => {
+const ParticipantDetailHeader = ({ participant, detail }: ParticipantDetailHeaderProps) => {
   // Get first letter of name for avatar
   const getInitials = (name: string) => {
     const nameParts = name.split(' ')
-    
-    return nameParts.length > 1
-      ? `${nameParts[0].charAt(0)}${nameParts[1].charAt(0)}`
-      : nameParts[0].charAt(0)
+
+    return nameParts.length > 1 ? `${nameParts[0].charAt(0)}${nameParts[1].charAt(0)}` : nameParts[0].charAt(0)
   }
 
   // Get random color based on name
   const getAvatarColor = (name: string) => {
     const colors = ['primary', 'secondary', 'success', 'error', 'warning', 'info']
     const hash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
-    
+
     return colors[hash % colors.length] as 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info'
   }
 
@@ -59,38 +58,42 @@ const ParticipantDetailHeader = ({ participant }: ParticipantDetailHeaderProps) 
         >
           {getInitials(participant.name)}
         </Avatar>
-        
+
         <Typography variant='h5' sx={{ mb: 2 }}>
           {participant.name}
         </Typography>
-        
+
         <Typography variant='body2' sx={{ mb: 4 }}>
           {participant.team}
         </Typography>
-        
+
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 4 }}>
-          <Chip 
-            label={participant.status} 
+          <Chip
+            label={participant.status}
             color={getStatusColor(participant.status) as 'success' | 'error' | 'warning'}
             sx={{ mr: 2 }}
           />
-          <Chip 
-            label={participant.className} 
-            color='primary'
-          />
+          {detail && (
+            <>
+              <Chip label={`#${detail.startNumber}`} color='primary' variant='outlined' sx={{ mr: 2 }} />
+              <Chip label={detail.className} color='primary' />
+            </>
+          )}
         </Box>
-        
+
         <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mx: 2, mb: 2 }}>
             <i className='ri-map-pin-line' style={{ marginRight: '8px' }} />
-            <Typography variant='body2'>{participant.city}, {participant.province}</Typography>
+            <Typography variant='body2'>
+              {participant.city}, {participant.province}
+            </Typography>
           </Box>
-          
+
           <Box sx={{ display: 'flex', alignItems: 'center', mx: 2, mb: 2 }}>
             <i className='ri-phone-line' style={{ marginRight: '8px' }} />
-            <Typography variant='body2'>{participant.phoneNumber}</Typography>
+            <Typography variant='body2'>{detail?.phoneNumber || participant.phoneNumber || '-'}</Typography>
           </Box>
-          
+
           <Box sx={{ display: 'flex', alignItems: 'center', mx: 2, mb: 2 }}>
             <i className='ri-calendar-line' style={{ marginRight: '8px' }} />
             <Typography variant='body2'>
@@ -101,6 +104,13 @@ const ParticipantDetailHeader = ({ participant }: ParticipantDetailHeaderProps) 
               })}
             </Typography>
           </Box>
+
+          {participant.orderId && (
+            <Box sx={{ display: 'flex', alignItems: 'center', mx: 2, mb: 2 }}>
+              <i className='ri-shopping-cart-line' style={{ marginRight: '8px' }} />
+              <Typography variant='body2'>{participant.orderId}</Typography>
+            </Box>
+          )}
         </Box>
       </CardContent>
     </Card>

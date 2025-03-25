@@ -45,32 +45,49 @@ interface ParticipantListTableProps {
 
 const ParticipantListTable = ({ participants }: ParticipantListTableProps) => {
   // States
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const [rowSelection, setRowSelection] = useState({});
-  const [globalFilter, setGlobalFilter] = useState('');
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [sorting, setSorting] = useState<SortingState>([])
+  const [rowSelection, setRowSelection] = useState({})
+  const [globalFilter, setGlobalFilter] = useState('')
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 10
-  });
+  })
 
   // Hooks
-  const router = useRouter();
+  const router = useRouter()
 
   // Navigate to participant details
-  const handleViewDetails = useCallback((id: number) => {
-    router.push(`/en/participants/details/${id}`);
-  }, [router]);
+  const handleViewDetails = useCallback(
+    (id: number) => {
+      router.push(`/en/participants/details/${id}`)
+    },
+    [router]
+  )
+
+  // Helper function to get the first detail from the details array
+  const getFirstDetail = useCallback((participant: Participant) => {
+    return participant.details && participant.details.length > 0 ? participant.details[0] : null
+  }, [])
 
   // Column Definitions
-  const columnHelper = createColumnHelper<Participant>();
+  const columnHelper = createColumnHelper<Participant>()
 
   const columns = useMemo(
     () => [
-      columnHelper.accessor('startNumber', {
-        header: 'Start Number',
-        cell: info => info.getValue() || '-'
-      }),
+      columnHelper.accessor(
+        row => {
+          const detail = getFirstDetail(row)
+
+          return detail ? detail.startNumber : '-'
+        },
+        {
+          id: 'startNumber',
+          header: 'Start Number',
+          cell: info => info.getValue() || '-'
+        }
+      ),
       columnHelper.accessor('name', {
         header: 'Name',
         cell: info => info.getValue() || '-'
@@ -91,31 +108,63 @@ const ParticipantListTable = ({ participants }: ParticipantListTableProps) => {
         header: 'Team',
         cell: info => info.getValue() || '-'
       }),
-      columnHelper.accessor('categoryClass', {
-        header: 'Category',
-        cell: info => info.getValue() || '-'
-      }),
-      columnHelper.accessor('className', {
-        header: 'Class',
-        cell: info => info.getValue() || '-'
-      }),
-      columnHelper.accessor('vehicleBrand', {
-        header: 'Vehicle Brand',
-        cell: info => info.getValue() || '-'
-      }),
-      columnHelper.accessor('vehicleType', {
-        header: 'Vehicle Type',
-        cell: info => info.getValue() || '-'
-      }),
+      columnHelper.accessor(
+        row => {
+          const detail = getFirstDetail(row)
+
+          return detail ? detail.categoryClass : '-'
+        },
+        {
+          id: 'categoryClass',
+          header: 'Category',
+          cell: info => info.getValue() || '-'
+        }
+      ),
+      columnHelper.accessor(
+        row => {
+          const detail = getFirstDetail(row)
+
+          return detail ? detail.className : '-'
+        },
+        {
+          id: 'className',
+          header: 'Class',
+          cell: info => info.getValue() || '-'
+        }
+      ),
+      columnHelper.accessor(
+        row => {
+          const detail = getFirstDetail(row)
+
+          return detail ? detail.vehicleBrand : '-'
+        },
+        {
+          id: 'vehicleBrand',
+          header: 'Vehicle Brand',
+          cell: info => info.getValue() || '-'
+        }
+      ),
+      columnHelper.accessor(
+        row => {
+          const detail = getFirstDetail(row)
+
+          return detail ? detail.vehicleType : '-'
+        },
+        {
+          id: 'vehicleType',
+          header: 'Vehicle Type',
+          cell: info => info.getValue() || '-'
+        }
+      ),
       columnHelper.accessor('status', {
         header: 'Status',
         cell: info => {
-          const status = info.getValue();
-          let color = 'primary';
-          
-          if (status === 'Approved') color = 'success';
-          if (status === 'Rejected') color = 'error';
-          
+          const status = info.getValue()
+          let color = 'primary'
+
+          if (status === 'Approved') color = 'success'
+          if (status === 'Rejected') color = 'error'
+
           return (
             <Box
               sx={{
@@ -129,21 +178,26 @@ const ParticipantListTable = ({ participants }: ParticipantListTableProps) => {
             >
               {status}
             </Box>
-          );
+          )
         }
       }),
       columnHelper.accessor('registrationDate', {
         header: 'Registration Date',
         cell: info => {
-          const date = info.getValue();
-          if (!date) return '-';
-          
+          const date = info.getValue()
+
+          if (!date) return '-'
+
           return new Date(date).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'short',
             day: 'numeric'
-          });
+          })
         }
+      }),
+      columnHelper.accessor('orderId', {
+        header: 'Order ID',
+        cell: info => info.getValue() || '-'
       }),
       columnHelper.display({
         id: 'actions',
@@ -163,8 +217,8 @@ const ParticipantListTable = ({ participants }: ParticipantListTableProps) => {
         )
       })
     ],
-    [handleViewDetails, columnHelper]
-  );
+    [handleViewDetails, columnHelper, getFirstDetail]
+  )
 
   // Create the table instance
   const table = useReactTable({
@@ -190,7 +244,7 @@ const ParticipantListTable = ({ participants }: ParticipantListTableProps) => {
     filterFns: {
       fuzzy: () => true
     } as Record<'fuzzy', FilterFn<any>>
-  });
+  })
 
   return (
     <Box>
@@ -248,9 +302,7 @@ const ParticipantListTable = ({ participants }: ParticipantListTableProps) => {
                 table.getRowModel().rows.map(row => (
                   <TableRow key={row.id} hover>
                     {row.getVisibleCells().map(cell => (
-                      <TableCell key={cell.id}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
+                      <TableCell key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>
                     ))}
                   </TableRow>
                 ))
@@ -275,7 +327,7 @@ const ParticipantListTable = ({ participants }: ParticipantListTableProps) => {
         />
       </Paper>
     </Box>
-  );
-};
+  )
+}
 
-export default ParticipantListTable;
+export default ParticipantListTable

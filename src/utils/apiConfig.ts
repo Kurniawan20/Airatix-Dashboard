@@ -38,8 +38,10 @@ export const API_ENDPOINTS = {
   TRANSACTIONS: {
     ALL: `${API_BASE_URL}/transactions`,
     ORGANIZER: (organizerId: string | number) => `${API_BASE_URL}/organizers/${organizerId}/transactions`,
-    EVENT: (eventId: string | number, page: number = 1) => `${API_BASE_URL}/events/${eventId}/transactions?page=${page}`,
-    MONTHLY_GROSS: (year: number = new Date().getFullYear()) => `${API_BASE_URL}/transactions/monthly-gross?year=${year}`
+    EVENT: (eventId: string | number, page: number = 1) =>
+      `${API_BASE_URL}/events/${eventId}/transactions?page=${page}`,
+    MONTHLY_GROSS: (year: number = new Date().getFullYear()) =>
+      `${API_BASE_URL}/transactions/monthly-gross?year=${year}`
   }
 }
 
@@ -569,46 +571,48 @@ export const updateUserApi = async (userId: number, userData: Partial<User>) => 
 
 /**
  * Get all participants API call
- * @returns The response from the get all participants API
+ * @returns Response with all participants
  */
 export const getAllParticipantsApi = async () => {
   try {
-    console.log('Get all participants API call')
+    // Get the token
+    const token = getAuthToken()
 
-    const response = await fetchWithAuthFallback(API_ENDPOINTS.PARTICIPANTS.ALL, {
-      method: 'GET'
+    // Create headers
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json'
+    }
+
+    // Add token if available
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
+    // Make the request
+    const response = await fetch(API_ENDPOINTS.PARTICIPANTS.ALL, {
+      method: 'GET',
+      headers
     })
 
+    const data = await response.json()
+
     if (!response.ok) {
-      // Handle error response
-      let errorMessage = 'Failed to fetch participants'
-
-      try {
-        const errorData = await response.json()
-
-        errorMessage = errorData.message || errorMessage
-      } catch (e) {
-        // If parsing JSON fails, use the default error message
-      }
-
       return {
         success: false,
-        error: errorMessage,
+        error: data.message || 'Failed to fetch participants',
         status: response.status,
         data: null
       }
     }
 
-    const data = await response.json()
-
     return {
       success: true,
-      data,
+      data: data, // The API now returns participants with nested details
       status: response.status,
       error: null
     }
   } catch (error) {
-    console.error('Get all participants API error:', error)
+    console.error('Error fetching participants:', error)
 
     return {
       success: false,
@@ -620,48 +624,50 @@ export const getAllParticipantsApi = async () => {
 }
 
 /**
- * Get participant by ID API call
- * @param id The ID of the participant to fetch
- * @returns The response from the get participant by ID API
+ * Gets a participant by ID
+ * @param id The participant ID
+ * @returns Response with participant details
  */
 export const getParticipantByIdApi = async (id: number) => {
   try {
-    console.log('Get participant by ID API call:', id)
+    // Get the token
+    const token = getAuthToken()
 
-    const response = await fetchWithAuthFallback(API_ENDPOINTS.PARTICIPANTS.GET_BY_ID(id), {
-      method: 'GET'
+    // Create headers
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json'
+    }
+
+    // Add token if available
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
+    // Make the request
+    const response = await fetch(API_ENDPOINTS.PARTICIPANTS.GET_BY_ID(id), {
+      method: 'GET',
+      headers
     })
 
+    const data = await response.json()
+
     if (!response.ok) {
-      // Handle error response
-      let errorMessage = 'Failed to fetch participant'
-
-      try {
-        const errorData = await response.json()
-
-        errorMessage = errorData.message || errorMessage
-      } catch (e) {
-        // If parsing JSON fails, use the default error message
-      }
-
       return {
         success: false,
-        error: errorMessage,
+        error: data.message || `Failed to fetch participant with ID ${id}`,
         status: response.status,
         data: null
       }
     }
 
-    const data = await response.json()
-
     return {
       success: true,
-      data,
+      data: data, // The API now returns participant with nested details
       status: response.status,
       error: null
     }
   } catch (error) {
-    console.error('Get participant by ID API error:', error)
+    console.error(`Error fetching participant with ID ${id}:`, error)
 
     return {
       success: false,

@@ -3,14 +3,10 @@
  * This file contains types related to participants
  */
 
-export interface Participant {
+export interface ParticipantDetail {
   id: number
+  participantId: number
   startNumber: string
-  name: string
-  nik: string
-  city: string
-  province: string
-  team: string
   categoryClass: string
   className: string
   vehicleBrand: string
@@ -20,9 +16,24 @@ export interface Participant {
   engineNumber: string
   phoneNumber: string
   pos: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Participant {
+  id: number
+  name: string
+  nik: string
+  city: string
+  province: string
+  team: string
   file?: string
   registrationDate: string
   status: 'Pending' | 'Approved' | 'Rejected'
+  orderId?: string
+  phoneNumber?: string | null
+  expirationDate?: string | null
+  details: ParticipantDetail[]
 }
 
 export interface ParticipantResponse {
@@ -38,12 +49,12 @@ export interface ParticipantResponse {
 }
 
 export interface ParticipantRegistrationData {
-  startNumber: string
   name: string
   nik: string
   city: string
   province: string
   team: string
+  startNumber: string
   categoryClass: string
   className: string
   vehicleBrand: string
