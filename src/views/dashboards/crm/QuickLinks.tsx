@@ -31,7 +31,7 @@ const QuickLinks = () => {
             <i className='ri-user-settings-line' style={{ marginRight: '8px' }}></i>
             Manage Event Organizers
           </a>
-          <a href='/en/participants'>
+          <a href='/en/participants/list'>
             <i className='ri-team-line' style={{ marginRight: '8px' }}></i>
             Manage Participants
           </a>
