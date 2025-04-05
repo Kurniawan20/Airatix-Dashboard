@@ -20,9 +20,6 @@ import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import { useTheme } from '@mui/material/styles'
-import Avatar from '@mui/material/Avatar'
-import Skeleton from '@mui/material/Skeleton'
-import { Printer } from '@mui/icons-material'
 import useMediaQuery from '@mui/material/useMediaQuery'
 
 // Third-party Imports
@@ -44,8 +41,6 @@ const ParticipantDetail = () => {
   const [error, setError] = useState<string | null>(null)
   const [participant, setParticipant] = useState<Participant | null>(null)
   const [activeDetail, setActiveDetail] = useState<ParticipantDetailType | null>(null)
-  const [activeDetailIndex, setActiveDetailIndex] = useState(0)
-  const [isPrinting, setIsPrinting] = useState(false)
 
   // Refs
   const printRef = useRef<HTMLDivElement>(null)
@@ -54,16 +49,8 @@ const ParticipantDetail = () => {
   const params = useParams()
   const router = useRouter()
   const theme = useTheme()
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const participantId = params.id as string
-
-  // Test function to simulate an expired token
-  const simulateTokenExpired = () => {
-    console.log('Simulating token expiration')
-
-    // Dispatch the auth unauthorized event
-    window.dispatchEvent(new CustomEvent('api-unauthorized'))
-  }
 
   useEffect(() => {
     const fetchParticipant = async () => {
@@ -174,17 +161,11 @@ const ParticipantDetail = () => {
               </Box>
             }
             action={
-              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-                <Button variant='outlined' startIcon={<Printer />} onClick={handlePrint} disabled={isPrinting}>
-                  Print Details
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                {activeDetail && <Chip label={activeDetail.className} color='primary' sx={{ fontWeight: 500 }} />}
+                <Button variant='outlined' onClick={handlePrint} size={isMobile ? 'small' : 'medium'}>
+                  {isMobile ? 'Print' : 'Print Details'}
                 </Button>
-                {participant?.details && participant.details.length > 1 && (
-                  <Chip
-                    label={`Class: ${participant.details[activeDetailIndex].className}`}
-                    color='primary'
-                    variant='outlined'
-                  />
-                )}
               </Box>
             }
           />
