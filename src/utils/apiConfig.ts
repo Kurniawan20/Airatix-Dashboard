@@ -253,6 +253,19 @@ export const getSessionToken = async (): Promise<string | null> => {
 }
 
 /**
+ * Handles 401 Unauthorized responses by dispatching a custom event
+ * This will trigger the AuthTokenInterceptor to redirect to login
+ */
+export const handleUnauthorizedResponse = (): void => {
+  if (typeof window !== 'undefined') {
+    console.log('Unauthorized response detected, dispatching event')
+
+    // Dispatch a custom event that will be caught by the AuthTokenInterceptor
+    window.dispatchEvent(new CustomEvent('api-unauthorized'))
+  }
+}
+
+/**
  * Fetches transaction data with authentication
  * @param url The URL to fetch from
  * @param options Additional fetch options
@@ -279,6 +292,18 @@ export const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
     })
 
     console.log('Response Status:', response.status)
+
+    // Check for 401 Unauthorized response and handle it
+    if (response.status === 401) {
+      handleUnauthorizedResponse()
+
+      return {
+        success: false,
+        error: 'Unauthorized. Please login again.',
+        status: response.status,
+        data: null
+      }
+    }
 
     const data = await response.json()
 
@@ -346,6 +371,11 @@ export const fetchWithAuthFallback = async (url: string, options: RequestInit = 
       })
 
       console.log('Response Status:', response.status)
+
+      // Check for 401 Unauthorized response and handle it
+      if (response.status === 401) {
+        handleUnauthorizedResponse()
+      }
 
       // Return the response directly without trying to parse it
       // Let the calling function handle the parsing based on the response status

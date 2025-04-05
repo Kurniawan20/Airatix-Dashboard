@@ -21,6 +21,8 @@ import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import { useTheme } from '@mui/material/styles'
 import useMediaQuery from '@mui/material/useMediaQuery'
+import Avatar from '@mui/material/Avatar'
+import Skeleton from '@mui/material/Skeleton'
 
 // Third-party Imports
 import { useReactToPrint } from 'react-to-print'
@@ -51,6 +53,14 @@ const ParticipantDetail = () => {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
   const participantId = params.id as string
+
+  // Test function to simulate an expired token
+  const simulateTokenExpired = () => {
+    console.log('Simulating token expiration')
+
+    // Dispatch the auth unauthorized event
+    window.dispatchEvent(new CustomEvent('api-unauthorized'))
+  }
 
   useEffect(() => {
     const fetchParticipant = async () => {
@@ -162,6 +172,9 @@ const ParticipantDetail = () => {
             }
             action={
               <Box sx={{ display: 'flex', gap: 2 }}>
+                <Button variant='outlined' color='warning' onClick={simulateTokenExpired}>
+                  Test Expired Token
+                </Button>
                 {activeDetail && <Chip label={activeDetail.className} color='primary' sx={{ fontWeight: 500 }} />}
                 <Button variant='outlined' onClick={handlePrint} size={isMobile ? 'small' : 'medium'}>
                   {isMobile ? 'Print' : 'Print Details'}
