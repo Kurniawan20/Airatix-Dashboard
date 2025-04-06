@@ -565,8 +565,13 @@ export const updateUserApi = async (userId: number, userData: Partial<User>) => 
       body: JSON.stringify(userData)
     })
 
+    // Parse the JSON response first
+    const data = await response.json()
+
+    console.log('Update user response:', data)
+
     if (!response.ok) {
-      let errorMessage = 'Failed to update user'
+      let errorMessage = data.message || 'Failed to update user'
 
       if (response.status === 401) {
         errorMessage = 'Unauthorized. Please login again.'
@@ -578,23 +583,33 @@ export const updateUserApi = async (userId: number, userData: Partial<User>) => 
 
       return {
         success: false,
-        error: errorMessage
+        error: errorMessage,
+        data: null
       }
     }
 
-    // Parse the JSON response
-    const data = await response.json()
+    // If the response contains an explicit error message
+    if (data.error) {
+      return {
+        success: false,
+        error: data.message || 'Failed to update user',
+        data: null
+      }
+    }
 
+    // Success case - the API returns the updated user data directly
     return {
       success: true,
-      data: data.data
+      data: data,
+      error: null
     }
   } catch (error) {
     console.error('Update user API error:', error)
 
     return {
       success: false,
-      error: 'An unexpected error occurred while updating user'
+      error: 'An unexpected error occurred while updating user',
+      data: null
     }
   }
 }
