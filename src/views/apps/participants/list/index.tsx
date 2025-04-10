@@ -18,6 +18,7 @@ import CircularProgress from '@mui/material/CircularProgress'
 
 // Component Imports
 import ParticipantListTable from './ParticipantListTable'
+import ExportButton from './ExportButton'
 
 // Type Imports
 import type { Participant } from '@/types/participant'
@@ -63,6 +64,10 @@ const ParticipantList = () => {
             title='Participants' 
             action={
               <Box sx={{ display: 'flex', gap: 2 }}>
+                <ExportButton 
+                  participants={participants} 
+                  disabled={loading || Boolean(error)} 
+                />
                 <Button 
                   variant='contained' 
                   component={Link} 
