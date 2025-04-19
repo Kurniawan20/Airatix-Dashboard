@@ -126,6 +126,63 @@ const TicketDialog = ({ open, onClose, transaction }: TicketDialogProps) => {
           </Grid>
         </Box>
 
+        {/* Customer Information Section */}
+        <Typography variant='h6' gutterBottom>
+          Customer Information
+        </Typography>
+        <Box sx={{ mb: 3 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={4}>
+              <Typography variant='subtitle2' color='text.secondary'>
+                First Name
+              </Typography>
+              <Typography>{transaction.firstname || 'N/A'}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Typography variant='subtitle2' color='text.secondary'>
+                Last Name
+              </Typography>
+              <Typography>{transaction.lastname || 'N/A'}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Typography variant='subtitle2' color='text.secondary'>
+                ID Type
+              </Typography>
+              <Typography>{transaction.id_type || 'N/A'}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Typography variant='subtitle2' color='text.secondary'>
+                ID Number
+              </Typography>
+              <Typography>{transaction.id_number || 'N/A'}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Typography variant='subtitle2' color='text.secondary'>
+                Phone
+              </Typography>
+              <Typography>{transaction.phone || 'N/A'}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Typography variant='subtitle2' color='text.secondary'>
+                Country
+              </Typography>
+              <Typography>{transaction.country || 'N/A'}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Typography variant='subtitle2' color='text.secondary'>
+                Province
+              </Typography>
+              <Typography>{transaction.province || 'N/A'}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Typography variant='subtitle2' color='text.secondary'>
+                City
+              </Typography>
+              <Typography>{transaction.city || 'N/A'}</Typography>
+            </Grid>
+          </Grid>
+        </Box>
+
         <Typography variant='h6' gutterBottom>
           Tickets
         </Typography>
@@ -287,7 +344,7 @@ const EventTransactionPage = ({ params }: EventDetailProps) => {
   const [error, setError] = useState<string | null>(null)
   const [globalFilter, setGlobalFilter] = useState('')
   const [rowsPerPage, setRowsPerPage] = useState(10)
-  
+
   // For server-side pagination
   const [page, setPage] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
@@ -366,10 +423,10 @@ const EventTransactionPage = ({ params }: EventDetailProps) => {
                 per_page: result.data.per_page || 10,
                 last_page: result.data.last_page || 1
               })
-              
+
               // Set total items for pagination
               setTotalItems(result.data.total_transactions || 0)
-              
+
               // Update rowsPerPage based on API response
               setRowsPerPage(result.data.per_page || 10)
             } catch (parseError) {
@@ -394,7 +451,7 @@ const EventTransactionPage = ({ params }: EventDetailProps) => {
 
     fetchEventTransactions()
   }, [params.id, currentPage])
-  
+
   return (
     <div>
       <Box sx={{ mb: 4, display: 'flex', alignItems: 'center' }}>
@@ -605,7 +662,7 @@ const EventTransactionPage = ({ params }: EventDetailProps) => {
                       onPageChange={handlePageChange}
                       rowsPerPage={rowsPerPage}
                       rowsPerPageOptions={[10]}
-                      labelDisplayedRows={({ from, to, count }) => 
+                      labelDisplayedRows={({ from, to, count }) =>
                         `${from}-${to} of ${count !== -1 ? count : `more than ${to}`}`
                       }
                     />

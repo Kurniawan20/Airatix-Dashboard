@@ -51,6 +51,13 @@ export interface Transaction {
   payment_url: string | null
   created_at: string
   updated_at: string
+  id_type: string | null
+  id_number: string | null
+  phone: string | null
+  country: string | null
+  province: string | null
+  city: string | null
+  metadata: string | null
   event: EventInfo
   tickets: Ticket[]
 }
