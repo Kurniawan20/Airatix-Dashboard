@@ -31,6 +31,7 @@ import type { Participant, ParticipantDetail as ParticipantDetailType } from '@/
 // Component Imports
 import PaymentQRCode from './PaymentQRCode'
 import ParticipantDetailHeader from './ParticipantDetailHeader'
+import ExportPdfButton from './ExportPdfButton'
 
 // API Imports
 import { getParticipantByIdApi } from '@/utils/apiConfig'
@@ -166,6 +167,7 @@ const ParticipantDetail = () => {
                 <Button variant='outlined' onClick={handlePrint} size={isMobile ? 'small' : 'medium'}>
                   {isMobile ? 'Print' : 'Print Details'}
                 </Button>
+                <ExportPdfButton participant={participant} contentRef={printRef} />
               </Box>
             }
           />
