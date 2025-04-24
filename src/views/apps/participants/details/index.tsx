@@ -22,16 +22,13 @@ import IconButton from '@mui/material/IconButton'
 import { useTheme } from '@mui/material/styles'
 import useMediaQuery from '@mui/material/useMediaQuery'
 
-// Third-party Imports
-import { useReactToPrint } from 'react-to-print'
-
 // Type Imports
 import type { Participant, ParticipantDetail as ParticipantDetailType } from '@/types/participant'
 
 // Component Imports
 import PaymentQRCode from './PaymentQRCode'
 import ParticipantDetailHeader from './ParticipantDetailHeader'
-import ExportPdfButton from './ExportPdfButton'
+import FormattedPdfExport from './FormattedPdfExport'
 
 // API Imports
 import { getParticipantByIdApi } from '@/utils/apiConfig'
@@ -91,24 +88,6 @@ const ParticipantDetail = () => {
     router.back()
   }
 
-  // Handle print functionality
-  const reactToPrintContent = useReactToPrint({
-    documentTitle: `Participant-${participant?.name || 'Details'}-${new Date().toISOString().split('T')[0]}`,
-    onAfterPrint: () => {
-      console.log('Print completed')
-    }
-  })
-
-  // Create a wrapper function to handle the print button click
-  const handlePrint = () => {
-    if (printRef.current) {
-      reactToPrintContent({
-        // @ts-ignore - content property is required by useReactToPrint
-        content: () => printRef.current
-      })
-    }
-  }
-
   // Handle switching between different participant details if multiple exist
   const handleSwitchDetail = (detail: ParticipantDetailType) => {
     setActiveDetail(detail)
@@ -162,12 +141,12 @@ const ParticipantDetail = () => {
               </Box>
             }
             action={
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                {activeDetail && <Chip label={activeDetail.className} color='primary' sx={{ fontWeight: 500 }} />}
-                <Button variant='outlined' onClick={handlePrint} size={isMobile ? 'small' : 'medium'}>
-                  {isMobile ? 'Print' : 'Print Details'}
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                {activeDetail && <Chip label={activeDetail.className} color='primary' sx={{ fontWeight: 500, mr: 2 }} />}
+                <Button variant='outlined' onClick={handleBack} size={isMobile ? 'small' : 'medium'}>
+                  {isMobile ? 'Back' : 'Go Back'}
                 </Button>
-                <ExportPdfButton participant={participant} contentRef={printRef} />
+                <FormattedPdfExport participant={participant} activeDetail={activeDetail} />
               </Box>
             }
           />
