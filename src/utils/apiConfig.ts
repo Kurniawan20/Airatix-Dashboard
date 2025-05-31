@@ -8,7 +8,7 @@ import type { User } from '@/types/user'
 
 // Base API URLs
 const AUTH_API_BASE_URL = process.env.NEXT_PUBLIC_AUTH_API_BASE_URL || 'https://insight.airatix.id:8089/api'
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://airatix.id:8000/api'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.airatix.id/api'
 
 // API Endpoints
 export const API_ENDPOINTS = {
@@ -41,7 +41,13 @@ export const API_ENDPOINTS = {
     EVENT: (eventId: string | number, page: number = 1) =>
       `${API_BASE_URL}/events/${eventId}/transactions?page=${page}`,
     MONTHLY_GROSS: (year: number = new Date().getFullYear()) =>
-      `${API_BASE_URL}/transactions/monthly-gross?year=${year}`
+      `${API_BASE_URL}/transactions/monthly-gross?year=${year}`,
+    ORGANIZER_MONTHLY_GROSS: (organizerId: string | number, year: number = new Date().getFullYear()) =>
+      `${API_BASE_URL}/organizers/${organizerId}/transactions/monthly-gross?year=${year}`
+  },
+  ORGANIZERS: {
+    ALL: `${API_BASE_URL}/organizers-public`,
+    GET_BY_ID: (id: number) => `${API_BASE_URL}/organizers/${id}`
   }
 }
 
@@ -136,6 +142,7 @@ export const registerUserApi = async (userData: {
   password: string
   firstName: string
   lastName: string
+  organizerId?: string
 }) => {
   try {
     console.log('Register API call with data:', {
@@ -969,6 +976,58 @@ export const createUserApi = async (userData: Partial<User>) => {
     return {
       success: false,
       error: 'An unexpected error occurred while creating user'
+    }
+  }
+}
+
+/**
+ * Get all organizers API call
+ * @returns The list of organizers or error
+ */
+export const getAllOrganizersApi = async () => {
+  try {
+    console.log('Getting all organizers')
+
+    const response = await fetchWithAuthFallback(API_ENDPOINTS.ORGANIZERS.ALL, {
+      method: 'GET'
+    })
+
+    if (!response.ok) {
+      let errorMessage = 'Failed to fetch organizers'
+
+      if (response.status === 401) {
+        errorMessage = 'Unauthorized. Please login again.'
+      } else if (response.status === 403) {
+        errorMessage = 'You do not have permission to view organizers.'
+      }
+
+      return {
+        success: false,
+        error: errorMessage,
+        status: response.status,
+        data: null
+      }
+    }
+
+    const responseData = await response.json()
+
+    // Handle different response formats
+    const organizers = responseData.data || responseData
+
+    return {
+      success: true,
+      data: organizers,
+      status: response.status,
+      error: null
+    }
+  } catch (error: any) {
+    console.error('Get organizers API error:', error)
+
+    return {
+      success: false,
+      error: 'Network error occurred',
+      status: 500,
+      data: null
     }
   }
 }

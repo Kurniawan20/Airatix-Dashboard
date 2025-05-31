@@ -4,7 +4,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
- 
+// Auth Imports
+import { useSession } from 'next-auth/react'
 
 // MUI Imports
 import Card from '@mui/material/Card'
@@ -13,8 +14,6 @@ import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import CircularProgress from '@mui/material/CircularProgress'
 import Button from '@mui/material/Button'
-
- 
 
 // API Config Imports
 import { API_ENDPOINTS, fetchWithAuthFallback } from '@/utils/apiConfig'
@@ -25,14 +24,30 @@ const TotalEvents = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const { data: session } = useSession()
 
   useEffect(() => {
     const fetchTotalEvents = async () => {
       try {
         setLoading(true)
-
-        // Use the correct API endpoint
-        const response = await fetchWithAuthFallback(API_ENDPOINTS.TRANSACTIONS.ALL)
+        
+        // Get organizerId from session
+        const organizerId = session?.user?.organizerId
+        
+        console.log('Fetching events with organizerId:', organizerId)
+        
+        let response;
+        
+        // Only use organizer endpoint if organizerId exists and is not 0
+        if (organizerId && organizerId !== 0 && organizerId !== '0') {
+          // For event organizer: fetch their specific data
+          console.log('Fetching events for organizer:', organizerId)
+          response = await fetchWithAuthFallback(API_ENDPOINTS.TRANSACTIONS.ORGANIZER(organizerId))
+        } else {
+          // For admin users, fetch all data
+          console.log('Fetching all events (admin view)')
+          response = await fetchWithAuthFallback(API_ENDPOINTS.TRANSACTIONS.ALL)
+        }
 
         if (!response.ok) {
           throw new Error('Failed to fetch events data')
@@ -45,28 +60,29 @@ const TotalEvents = () => {
         }
 
         const result = JSON.parse(responseText)
-
         console.log('Parsed transaction data:', result)
-
-        // Get the total count of events from the API response
-        // Sum up all the event counts from all organizers
-        let totalEvents = 0
-
-        // Check if we have organizers data
-        if (result.data?.organizers && Array.isArray(result.data.organizers)) {
-          // Sum up the event_count from each organizer
-          totalEvents = result.data.organizers.reduce((sum: number, organizer: any) => {
-            // Log each organizer to see the structure
-            console.log('Organizer:', organizer)
-
-            // Check if the organizer has events property
-            if (organizer.events && Array.isArray(organizer.events)) {
-              return sum + organizer.events.length
-            }
-
-            // Fallback to event_count if available
-            return sum + (organizer.event_count || 0)
-          }, 0)
+        
+        // Calculate total events count
+        let totalEvents = 0;
+        
+        // Handle different response formats based on user role
+        
+        if (organizerId) {
+          // For event organizer: count events from their specific data
+          if (result.data?.events && Array.isArray(result.data.events)) {
+            totalEvents = result.data.events.length;
+          }
+        } else {
+          // For admin: sum up events from all organizers
+          if (result.data?.organizers && Array.isArray(result.data.organizers)) {
+            totalEvents = result.data.organizers.reduce((sum: number, organizer: any) => {
+              if (organizer.events && Array.isArray(organizer.events)) {
+                return sum + organizer.events.length;
+              }
+              
+              return sum + (organizer.event_count || 0);
+            }, 0);
+          }
         }
 
         setTotalCount(totalEvents)
@@ -82,13 +98,20 @@ const TotalEvents = () => {
     }
 
     fetchTotalEvents()
-  }, [])
+  }, [session?.user?.organizerId])
 
   const handleViewAll = () => {
     // Get the current language from the URL
     const lang = window.location.pathname.split('/')[1] || 'en'
+    const organizerId = session?.user?.organizerId
 
-    router.push(`/${lang}/event-transactions`)
+    if (organizerId && organizerId !== 0 && organizerId !== '0') {
+      // If user is an event organizer, direct to their orders page
+      router.push(`/${lang}/orders`)
+    } else {
+      // If user is an admin, direct to the general transactions page
+      router.push(`/${lang}/event-transactions`)
+    }
   }
 
   return (

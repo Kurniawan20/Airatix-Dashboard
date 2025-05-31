@@ -4,6 +4,9 @@ import { useParams } from 'next/navigation'
 // MUI Imports
 import { useTheme } from '@mui/material/styles'
 
+// Next-Auth Imports
+import { useSession } from 'next-auth/react'
+
 // Third-party Imports
 import PerfectScrollbar from 'react-perfect-scrollbar'
 
@@ -48,6 +51,10 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
   const theme = useTheme()
   const verticalNavOptions = useVerticalNav()
   const params = useParams()
+  const { data: session } = useSession()
+  
+  // Get organizerId from session
+  const organizerId = session?.organizerId || session?.user?.organizerId
 
   // Vars
   const { isBreakpointReached, transitionDuration } = verticalNavOptions
@@ -78,19 +85,37 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
         renderExpandedMenuItemIcon={{ icon: <i className='ri-circle-fill' /> }}
         menuSectionStyles={menuSectionStyles(verticalNavOptions, theme)}
       >
+        {/* Dashboard is visible to all users */}
         <MenuItem href={`/${locale}/dashboards/crm`} icon={<i className='ri-home-smile-line' />}>
           {dictionary['navigation'].dashboards}
         </MenuItem>
-        <MenuItem href={`/${locale}/event-organizers`} icon={<i className='ri-team-line' />}>
-          {dictionary['navigation'].eventOrganizers}
-        </MenuItem>
-        <MenuItem href={`/${locale}/event-transactions`} icon={<i className='ri-exchange-dollar-line' />}>
-          {dictionary['navigation'].eventTransactions}
-        </MenuItem>
-        <SubMenu label='Starters' icon={<i className='ri-group-line' />}>
-          <MenuItem href={`/${locale}/participants/list`}>List</MenuItem>
-          <MenuItem href={`/${locale}/participants/register`}>Register</MenuItem>
-        </SubMenu>
+        
+        {/* Event Transaction is only visible to admin users */}
+        {(!organizerId || organizerId === '0') && (
+          <MenuItem href={`/${locale}/event-transactions`} icon={<i className='ri-exchange-dollar-line' />}>
+            {(dictionary['navigation'] as any).eventTransactions}
+          </MenuItem>
+        )}
+        
+        {/* Orders menu is only visible to organizer users */}
+        {organizerId && organizerId !== '0' && (
+          <MenuItem href={`/${locale}/orders`} icon={<i className='ri-shopping-bag-3-line' />}>
+            Orders
+          </MenuItem>
+        )}
+        
+        {/* The following items are only visible to non-organizer users (organizerId is null or '0') */}
+        {(!organizerId || organizerId === '0') && (
+          <>
+            <MenuItem href={`/${locale}/event-organizers`} icon={<i className='ri-team-line' />}>
+              {(dictionary['navigation'] as any).eventOrganizers}
+            </MenuItem>
+            <SubMenu label='Starters' icon={<i className='ri-group-line' />}>
+              <MenuItem href={`/${locale}/participants/list`}>List</MenuItem>
+              <MenuItem href={`/${locale}/participants/register`}>Register</MenuItem>
+            </SubMenu>
+          </>
+        )}
         {/* <SubMenu label={dictionary['navigation'].frontPages} icon={<i className='ri-file-copy-line' />}>
           <MenuItem href='/front-pages/landing-page' target='_blank'>
             {dictionary['navigation'].landing}
@@ -110,8 +135,12 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
         </SubMenu> */}
         <MenuSection label={dictionary['navigation'].appsPages}>
           <SubMenu label={dictionary['navigation'].user} icon={<i className='ri-user-line' />}>
-            <MenuItem href={`/${locale}/user/list`}>{dictionary['navigation'].list}</MenuItem>
-            <MenuItem href={`/${locale}/user/register`}>{dictionary['navigation'].registerUser}</MenuItem>
+            {(!organizerId || organizerId === '0') && (
+              <>
+                <MenuItem href={`/${locale}/user/list`}>{dictionary['navigation'].list}</MenuItem>
+                <MenuItem href={`/${locale}/user/register`}>{dictionary['navigation'].registerUser}</MenuItem>
+              </>
+            )}
             <MenuItem href={`/${locale}/user-profile`}>Profile</MenuItem>
             {/* <MenuItem href={`/${locale}/user/view`}>{dictionary['navigation'].view}</MenuItem> */}
           </SubMenu>

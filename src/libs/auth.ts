@@ -7,7 +7,7 @@ import type { NextAuthOptions } from 'next-auth'
 import type { Adapter } from 'next-auth/adapters'
 
 // API Config Imports
-import { API_ENDPOINTS, loginApi, setAuthToken, getAuthToken } from '@/utils/apiConfig'
+import { loginApi, setAuthToken, getAuthToken } from '@/utils/apiConfig'
 
 const prisma = new PrismaClient()
 
@@ -53,11 +53,13 @@ export const authOptions: NextAuthOptions = {
           });
 
           // Return the user object
+          
           return {
             id: username,
             name: data.username,
             email: data.email,
             role: data.role,
+            organizerId: data.organizerId || '0', // Add organizerId, default to '0' for non-EO users
             accessToken: data.token
           }
         } catch (error) {
@@ -108,9 +110,10 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         console.log('User authenticated, storing token in session storage');
-        console.log('User object:', { role: user.role, hasAccessToken: !!user.accessToken });
+        console.log('User object:', { role: user.role, organizerId: user.organizerId, hasAccessToken: !!user.accessToken });
         
         token.role = user.role;
+        token.organizerId = user.organizerId;
         token.accessToken = user.accessToken;
         
         // Store token in session storage for direct API access
@@ -122,11 +125,13 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
-      return token
+      return token;
     },
     async session({ session, token }) {
       if (token) {
         session.user.role = token.role
+        session.user.organizerId = token.organizerId
+        session.organizerId = token.organizerId
         
         // Make sure the token is available in the session
         if (token.accessToken) {
@@ -143,6 +148,7 @@ export const authOptions: NextAuthOptions = {
           console.log('No access token in token object');
         }
       }
+      
       return session
     }
   }

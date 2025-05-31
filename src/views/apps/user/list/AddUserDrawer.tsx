@@ -1,5 +1,5 @@
 // React Imports
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 // MUI Imports
 import Button from '@mui/material/Button'
@@ -19,6 +19,10 @@ import { useForm, Controller } from 'react-hook-form'
 
 // Types Imports
 import type { UsersType } from '@/types/apps/userTypes'
+import type { Organizer } from '@/types/organizer'
+
+// API Imports
+import { getAllOrganizersApi } from '@/utils/apiConfig'
 
 type Props = {
   open: boolean
@@ -34,6 +38,7 @@ type FormValidateType = {
   role: string
   plan: string
   status: string
+  organizerId: string
 }
 
 type FormNonValidateType = {
@@ -55,6 +60,9 @@ const AddUserDrawer = (props: Props) => {
 
   // States
   const [formData, setFormData] = useState<FormNonValidateType>(initialData)
+  const [organizers, setOrganizers] = useState<Organizer[]>([])
+  const [loadingOrganizers, setLoadingOrganizers] = useState(false)
+  const [organizerError, setOrganizerError] = useState<string | null>(null)
 
   // Hooks
   const {
@@ -69,9 +77,35 @@ const AddUserDrawer = (props: Props) => {
       email: '',
       role: '',
       plan: '',
-      status: ''
+      status: '',
+      organizerId: ''
     }
   })
+
+  // Fetch organizers on component mount
+  useEffect(() => {
+    const fetchOrganizers = async () => {
+      setLoadingOrganizers(true)
+      setOrganizerError(null)
+      
+      try {
+        const response = await getAllOrganizersApi()
+        
+        if (response.success) {
+          setOrganizers(response.data)
+        } else {
+          setOrganizerError(response.error || 'Failed to fetch organizers')
+        }
+      } catch (error) {
+        console.error('Error fetching organizers:', error)
+        setOrganizerError('An unexpected error occurred')
+      } finally {
+        setLoadingOrganizers(false)
+      }
+    }
+    
+    fetchOrganizers()
+  }, [open])
 
   const onSubmit = (data: FormValidateType) => {
     const newUser: UsersType = {
@@ -85,13 +119,14 @@ const AddUserDrawer = (props: Props) => {
       status: data.status,
       company: formData.company,
       country: formData.country,
-      contact: formData.contact
+      contact: formData.contact,
+      organizerId: data.organizerId ? parseInt(data.organizerId) : undefined
     }
 
     setData([...(userData ?? []), newUser])
     handleClose()
     setFormData(initialData)
-    resetForm({ fullName: '', username: '', email: '', role: '', plan: '', status: '' })
+    resetForm({ fullName: '', username: '', email: '', role: '', plan: '', status: '', organizerId: '' })
   }
 
   const handleReset = () => {
@@ -248,6 +283,46 @@ const AddUserDrawer = (props: Props) => {
             value={formData.contact}
             onChange={e => setFormData({ ...formData, contact: e.target.value })}
           />
+          
+          <FormControl fullWidth>
+            <InputLabel id='organizer-label' error={Boolean(errors.organizerId)}>
+              Select Organizer
+            </InputLabel>
+            <Controller
+              name='organizerId'
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <Select 
+                  label='Select Organizer' 
+                  {...field} 
+                  error={Boolean(errors.organizerId)}
+                  disabled={loadingOrganizers}
+                >
+                  {loadingOrganizers ? (
+                    <MenuItem value='' disabled>
+                      Loading organizers...
+                    </MenuItem>
+                  ) : organizerError ? (
+                    <MenuItem value='' disabled>
+                      Error: {organizerError}
+                    </MenuItem>
+                  ) : organizers.length === 0 ? (
+                    <MenuItem value='' disabled>
+                      No organizers available
+                    </MenuItem>
+                  ) : (
+                    organizers.map(organizer => (
+                      <MenuItem key={organizer.id} value={organizer.id.toString()}>
+                        {organizer.name} ({organizer.email})
+                      </MenuItem>
+                    ))
+                  )}
+                </Select>
+              )}
+            />
+            {errors.organizerId && <FormHelperText error>This field is required.</FormHelperText>}
+          </FormControl>
           <div className='flex items-center gap-4'>
             <Button variant='contained' type='submit'>
               Submit

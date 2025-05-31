@@ -2,8 +2,10 @@
 
 // React Imports
 import { useState, useEffect } from 'react'
-
 import { useRouter } from 'next/navigation'
+
+// Auth Imports
+import { useSession } from 'next-auth/react'
 
 // MUI Imports
 import Card from '@mui/material/Card'
@@ -21,6 +23,11 @@ const TotalOrganizers = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const { data: session } = useSession()
+  
+  // Check if user is an admin
+  const organizerId = session?.user?.organizerId
+  const isAdmin = !organizerId || organizerId === 0 || organizerId === '0'
 
   useEffect(() => {
     const fetchTotalOrganizers = async () => {
@@ -65,6 +72,11 @@ const TotalOrganizers = () => {
     router.push(`/${lang}/event-organizers`)
   }
 
+  // If user is not an admin, don't render this component
+  if (!isAdmin) {
+    return null
+  }
+  
   return (
     <Card>
       <CardContent sx={{ p: theme => `${theme.spacing(5)} !important` }}>

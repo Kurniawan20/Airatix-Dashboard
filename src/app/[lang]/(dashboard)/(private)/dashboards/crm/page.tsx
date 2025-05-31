@@ -24,21 +24,27 @@ const DashboardCRM = async () => {
   // Get the user's name or username
   const userName = session?.user?.name || session?.user?.email?.split('@')[0] || 'User'
 
+  // Check if user is an event organizer or admin
+  const organizerId = session?.user?.organizerId
+  const isAdmin = !organizerId || organizerId === 0 || organizerId === '0'
+
   return (
     <Grid container spacing={6}>
       {/* Stats Cards Row - Horizontal Layout */}
       <Grid item xs={12}>
         <Grid container spacing={6}>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={isAdmin ? 3 : 4}>
             <TotalRevenueWrapper />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <TotalOrganizersWrapper />
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          {isAdmin && (
+            <Grid item xs={12} sm={6} md={3}>
+              <TotalOrganizersWrapper />
+            </Grid>
+          )}
+          <Grid item xs={12} sm={6} md={isAdmin ? 3 : 4}>
             <TotalEventsWrapper />
           </Grid>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={isAdmin ? 3 : 4}>
             <TotalFeeWrapper />
           </Grid>
         </Grid>
@@ -78,9 +84,7 @@ const DashboardCRM = async () => {
           </CardContent>
         </Card>
       </Grid>
-      <Grid item xs={12} md={4}>
-        <QuickLinks />
-      </Grid>
+      {/* QuickLinks component has been removed as per requirements */}
     </Grid>
   )
 }

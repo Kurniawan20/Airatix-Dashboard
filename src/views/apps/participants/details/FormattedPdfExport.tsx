@@ -35,6 +35,13 @@ const FormattedPdfExport = ({ participant, activeDetail }: FormattedPdfExportPro
         creator: 'Airatix EO Management'
       })
 
+      // Application colors from theme
+      const primaryColor = [102, 108, 255] as [number, number, number] // #666CFF in RGB
+      const secondaryColor = [109, 120, 141] as [number, number, number] // #6D788D in RGB
+      const successColor = [114, 225, 40] as [number, number, number] // #72E128 in RGB
+      const infoColor = [38, 198, 249] as [number, number, number] // #26C6F9 in RGB
+      const textColor = [58, 53, 65] as [number, number, number] // Text color
+      
       // Set font sizes and styles
       const titleFontSize = 16
       const headerFontSize = 14
@@ -48,15 +55,23 @@ const FormattedPdfExport = ({ participant, activeDetail }: FormattedPdfExportPro
       // Current Y position tracker
       let yPos = margin
 
+      // Add a colored header bar
+      pdf.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2])
+      pdf.rect(0, 0, pageWidth, 15, 'F')
+      
       // Add title
       pdf.setFontSize(titleFontSize)
       pdf.setFont('helvetica', 'bold')
-      pdf.text('Participant Registration Form', pageWidth / 2, yPos, { align: 'center' })
-      yPos += 10
+      pdf.setTextColor(0, 0, 0) // Black text
+      pdf.text('Participant Registration Form', pageWidth / 2, yPos + 5, { align: 'center' })
+      yPos += 15
 
-      // Add event name
+      // Add event name with colored background
+      pdf.setFillColor(infoColor[0], infoColor[1], infoColor[2], 0.1) // Light info color background
+      pdf.rect(margin, yPos - 5, contentWidth, 10, 'F')
       pdf.setFontSize(normalFontSize)
       pdf.setFont('helvetica', 'normal')
+      pdf.setTextColor(textColor[0], textColor[1], textColor[2])
       pdf.text('Drag Racing Event Registration', pageWidth / 2, yPos, { align: 'center' })
       yPos += 8
 
@@ -70,24 +85,29 @@ const FormattedPdfExport = ({ participant, activeDetail }: FormattedPdfExportPro
       pdf.text(`Registration Date: ${registrationDate}`, pageWidth / 2, yPos, { align: 'center' })
       yPos += 15
 
-      // Add start number in a blue box
-      pdf.setFillColor(51, 51, 255) // Blue color
+      // Add start number in a primary color box
+      pdf.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2])
       pdf.rect(pageWidth / 2 - 30, yPos - 8, 60, 16, 'F')
       pdf.setTextColor(255, 255, 255) // White text
       pdf.setFont('helvetica', 'bold')
       pdf.text(`Start Number: #${activeDetail.startNumber}`, pageWidth / 2, yPos, { align: 'center' })
-      pdf.setTextColor(0, 0, 0) // Reset to black text
+      pdf.setTextColor(textColor[0], textColor[1], textColor[2]) // Reset to text color
       pdf.setFont('helvetica', 'normal')
       yPos += 20
 
-      // Section: Participant Information
+      // Section: Participant Information with styled header
+      pdf.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2], 0.1) // Light primary color
+      pdf.rect(margin, yPos - 5, contentWidth, 10, 'F')
       pdf.setFontSize(headerFontSize)
       pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]) // Primary color text
       pdf.text('Participant Information', margin, yPos)
       yPos += 5
       pdf.setLineWidth(0.5)
+      pdf.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]) // Primary color line
       pdf.line(margin, yPos, margin + contentWidth, yPos)
       yPos += 10
+      pdf.setTextColor(textColor[0], textColor[1], textColor[2]) // Reset to text color
 
       // Create participant info table
       const participantInfoData = [
@@ -101,14 +121,14 @@ const FormattedPdfExport = ({ participant, activeDetail }: FormattedPdfExportPro
         ['POS', activeDetail.pos || 'N/A']
       ]
 
-      // Use autoTable directly
+      // Use autoTable directly with theme colors
       autoTable(pdf, {
         startY: yPos,
         head: [participantInfoData[0]],
         body: participantInfoData.slice(1),
         theme: 'grid',
         headStyles: { 
-          fillColor: [51, 51, 255],
+          fillColor: primaryColor,
           textColor: [255, 255, 255],
           fontStyle: 'bold'
         },
@@ -120,13 +140,19 @@ const FormattedPdfExport = ({ participant, activeDetail }: FormattedPdfExportPro
       // @ts-ignore - lastAutoTable is added by the jspdf-autotable plugin
       yPos = pdf.lastAutoTable.finalY + 10
 
-      // Section: Class Information
+      // Section: Class Information with styled header
+      pdf.setFillColor(infoColor[0], infoColor[1], infoColor[2], 0.1) // Light info color
+      pdf.rect(margin, yPos - 5, contentWidth, 10, 'F')
       pdf.setFontSize(headerFontSize)
       pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(infoColor[0], infoColor[1], infoColor[2]) // Info color text
       pdf.text('Class Information', margin, yPos)
       yPos += 5
+      pdf.setLineWidth(0.5)
+      pdf.setDrawColor(infoColor[0], infoColor[1], infoColor[2]) // Info color line
       pdf.line(margin, yPos, margin + contentWidth, yPos)
       yPos += 10
+      pdf.setTextColor(textColor[0], textColor[1], textColor[2]) // Reset to text color
 
       // Create class info table
       const classInfoData = [
@@ -135,14 +161,14 @@ const FormattedPdfExport = ({ participant, activeDetail }: FormattedPdfExportPro
         ['Class Name', activeDetail.className]
       ]
 
-      // Use autoTable directly
+      // Use autoTable directly with theme colors
       autoTable(pdf, {
         startY: yPos,
         head: [classInfoData[0]],
         body: classInfoData.slice(1),
         theme: 'grid',
         headStyles: { 
-          fillColor: [51, 51, 255],
+          fillColor: infoColor,
           textColor: [255, 255, 255],
           fontStyle: 'bold'
         },
@@ -154,13 +180,19 @@ const FormattedPdfExport = ({ participant, activeDetail }: FormattedPdfExportPro
       // @ts-ignore - lastAutoTable is added by the jspdf-autotable plugin
       yPos = pdf.lastAutoTable.finalY + 10
 
-      // Section: Vehicle Information
+      // Section: Vehicle Information with styled header
+      pdf.setFillColor(secondaryColor[0], secondaryColor[1], secondaryColor[2], 0.1) // Light secondary color
+      pdf.rect(margin, yPos - 5, contentWidth, 10, 'F')
       pdf.setFontSize(headerFontSize)
       pdf.setFont('helvetica', 'bold')
+      pdf.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]) // Secondary color text
       pdf.text('Vehicle Information', margin, yPos)
       yPos += 5
+      pdf.setLineWidth(0.5)
+      pdf.setDrawColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]) // Secondary color line
       pdf.line(margin, yPos, margin + contentWidth, yPos)
       yPos += 10
+      pdf.setTextColor(textColor[0], textColor[1], textColor[2]) // Reset to text color
 
       // Create vehicle info table
       const vehicleInfoData = [
@@ -172,14 +204,14 @@ const FormattedPdfExport = ({ participant, activeDetail }: FormattedPdfExportPro
         ['Engine Number', activeDetail.engineNumber]
       ]
 
-      // Use autoTable directly
+      // Use autoTable directly with theme colors
       autoTable(pdf, {
         startY: yPos,
         head: [vehicleInfoData[0]],
         body: vehicleInfoData.slice(1),
         theme: 'grid',
         headStyles: { 
-          fillColor: [51, 51, 255],
+          fillColor: secondaryColor,
           textColor: [255, 255, 255],
           fontStyle: 'bold'
         },
@@ -191,19 +223,22 @@ const FormattedPdfExport = ({ participant, activeDetail }: FormattedPdfExportPro
       // @ts-ignore - lastAutoTable is added by the jspdf-autotable plugin
       yPos = pdf.lastAutoTable.finalY + 10
 
-      // Add note
+      // Add note with styled background
+      pdf.setFillColor(successColor[0], successColor[1], successColor[2], 0.1) // Light success color
+      pdf.rect(margin, yPos - 5, contentWidth, 10, 'F')
       pdf.setFontSize(normalFontSize)
       pdf.setFont('helvetica', 'italic')
-      pdf.setTextColor(100, 100, 100) // Gray text
+      pdf.setTextColor(successColor[0], successColor[1], successColor[2]) // Success color text
       
       pdf.text('This is an official registration document. Please keep it for your records.', pageWidth / 2, yPos, { align: 'center' })
       yPos += 10
 
-      // Add signature lines
-      pdf.setTextColor(0, 0, 0) // Reset to black text
+      // Add signature lines with primary color
+      pdf.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]) // Primary color text
       pdf.setFont('helvetica', 'normal')
       
-      // Draw signature lines
+      // Draw signature lines in primary color
+      pdf.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2])
       pdf.line(margin + 10, yPos + 10, margin + 50, yPos + 10); // Left signature line
       pdf.line(pageWidth - margin - 50, yPos + 10, pageWidth - margin - 10, yPos + 10); // Right signature line
       
@@ -213,6 +248,11 @@ const FormattedPdfExport = ({ participant, activeDetail }: FormattedPdfExportPro
       // Official signature
       pdf.text('Official Signature', pageWidth - margin - 30, yPos + 20, { align: 'center' })
 
+      // Add a colored footer bar
+      pdf.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2])
+      pdf.rect(0, pdf.internal.pageSize.height - 10, pageWidth, 10, 'F')
+
+      
       // Save the PDF
       const fileName = `Participant-${participant.name}-${activeDetail.startNumber}.pdf`
       pdf.save(fileName)

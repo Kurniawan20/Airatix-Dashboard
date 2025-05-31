@@ -1,7 +1,7 @@
 'use client'
 
 // React Imports
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 // Next Imports
 import { useRouter } from 'next/navigation'
@@ -16,6 +16,11 @@ import CardContent from '@mui/material/CardContent'
 import Alert from '@mui/material/Alert'
 import Typography from '@mui/material/Typography'
 import CircularProgress from '@mui/material/CircularProgress'
+import FormControl from '@mui/material/FormControl'
+import InputLabel from '@mui/material/InputLabel'
+import Select from '@mui/material/Select'
+import MenuItem from '@mui/material/MenuItem'
+import FormHelperText from '@mui/material/FormHelperText'
 
 // Third-party Imports
 import { useForm, Controller } from 'react-hook-form'
@@ -24,7 +29,10 @@ import { object, string, minLength, email, pipe, nonEmpty } from 'valibot'
 import type { InferInput } from 'valibot'
 
 // API Import
-import { registerUserApi } from '@/utils/apiConfig'
+import { registerUserApi, getAllOrganizersApi } from '@/utils/apiConfig'
+
+// Type Imports
+import type { Organizer } from '@/types/organizer'
 
 type FormData = InferInput<typeof schema>
 
@@ -35,7 +43,8 @@ const schema = object({
   password: pipe(string(), nonEmpty('Password is required'), minLength(5, 'Password must be at least 5 characters long')),
   confirmPassword: pipe(string(), nonEmpty('Confirm password is required')),
   firstName: pipe(string(), nonEmpty('First name is required')),
-  lastName: pipe(string(), nonEmpty('Last name is required'))
+  lastName: pipe(string(), nonEmpty('Last name is required')),
+  organizerId: pipe(string(), nonEmpty('Organizer is required'))
 })
 
 const RegisterUserForm = () => {
@@ -43,9 +52,37 @@ const RegisterUserForm = () => {
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [organizers, setOrganizers] = useState<Organizer[]>([])
+  const [loadingOrganizers, setLoadingOrganizers] = useState(false)
+  const [organizerError, setOrganizerError] = useState<string | null>(null)
 
   // Hooks
   const router = useRouter()
+  
+  // Fetch organizers on component mount
+  useEffect(() => {
+    const fetchOrganizers = async () => {
+      setLoadingOrganizers(true)
+      setOrganizerError(null)
+      
+      try {
+        const response = await getAllOrganizersApi()
+        
+        if (response.success) {
+          setOrganizers(response.data)
+        } else {
+          setOrganizerError(response.error || 'Failed to fetch organizers')
+        }
+      } catch (error) {
+        console.error('Error fetching organizers:', error)
+        setOrganizerError('An unexpected error occurred')
+      } finally {
+        setLoadingOrganizers(false)
+      }
+    }
+    
+    fetchOrganizers()
+  }, [])
   
   const {
     control,
@@ -59,7 +96,8 @@ const RegisterUserForm = () => {
       password: '',
       confirmPassword: '',
       firstName: '',
-      lastName: ''
+      lastName: '',
+      organizerId: ''
     },
     resolver: valibotResolver(schema)
   })
@@ -70,6 +108,7 @@ const RegisterUserForm = () => {
       setError('Passwords do not match')
       return
     }
+
 
     setLoading(true)
     setError(null)
@@ -201,6 +240,50 @@ const RegisterUserForm = () => {
                     error={Boolean(errors.confirmPassword)}
                     helperText={errors.confirmPassword?.message}
                   />
+                )}
+              />
+            </Grid>
+            <Grid item xs={12}>              
+              <Controller
+                name='organizerId'
+                control={control}
+                render={({ field }) => (
+                  <FormControl fullWidth error={Boolean(errors.organizerId)}>
+                    <InputLabel id='organizer-label'>
+                      Select Organizer
+                    </InputLabel>
+                    <Select
+                      {...field}
+                      labelId='organizer-label'
+                      label='Select Organizer'
+                      disabled={loadingOrganizers}
+                    >
+                      {loadingOrganizers ? [
+                        <MenuItem key="loading" value='' disabled>
+                          <CircularProgress size={20} /> Loading organizers...
+                        </MenuItem>
+                      ] : organizerError ? [
+                        <MenuItem key="error" value='' disabled>
+                          Error: {organizerError}
+                        </MenuItem>
+                      ] : organizers.length === 0 ? [
+                        <MenuItem key="empty" value='' disabled>
+                          No organizers available
+                        </MenuItem>
+                      ] : [
+                        <MenuItem key="default" value=''>Select an organizer</MenuItem>,
+                        <MenuItem key="non-eo" value="0">Not an Event Organizer</MenuItem>,
+                        ...organizers.map(organizer => (
+                          <MenuItem key={organizer.id} value={organizer.id.toString()}>
+                            {organizer.name}
+                          </MenuItem>
+                        ))
+                      ]}
+                    </Select>
+                    {errors.organizerId && (
+                      <FormHelperText>{errors.organizerId.message}</FormHelperText>
+                    )}
+                  </FormControl>
                 )}
               />
             </Grid>

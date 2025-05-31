@@ -1,7 +1,7 @@
 'use client'
 
 // React Imports
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 // Next Imports
 import Link from 'next/link'
@@ -16,6 +16,12 @@ import Checkbox from '@mui/material/Checkbox'
 import Button from '@mui/material/Button'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Divider from '@mui/material/Divider'
+import FormControl from '@mui/material/FormControl'
+import InputLabel from '@mui/material/InputLabel'
+import Select from '@mui/material/Select'
+import MenuItem from '@mui/material/MenuItem'
+import FormHelperText from '@mui/material/FormHelperText'
+import CircularProgress from '@mui/material/CircularProgress'
 
 // Third-party Imports
 import classnames from 'classnames'
@@ -23,6 +29,7 @@ import classnames from 'classnames'
 // Type Imports
 import type { Mode } from '@core/types'
 import type { Locale } from '@configs/i18n'
+import type { Organizer } from '@/types/organizer'
 
 // Component Imports
 import Logo from '@components/layout/shared/Logo'
@@ -33,10 +40,22 @@ import { useSettings } from '@core/hooks/useSettings'
 
 // Util Imports
 import { getLocalizedUrl } from '@/utils/i18n'
+import { getAllOrganizersApi } from '@/utils/apiConfig'
 
 const Register = ({ mode }: { mode: Mode }) => {
   // States
   const [isPasswordShown, setIsPasswordShown] = useState(false)
+  const [organizers, setOrganizers] = useState<Organizer[]>([])
+  const [loadingOrganizers, setLoadingOrganizers] = useState(false)
+  const [organizerError, setOrganizerError] = useState<string | null>(null)
+  // We don't need the selectedOrganizer state since we're using formData
+
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    organizerId: ''
+  })
 
   // Vars
   const darkImg = '/images/pages/auth-v2-mask-2-dark.png'
@@ -60,6 +79,39 @@ const Register = ({ mode }: { mode: Mode }) => {
   )
 
   const handleClickShowPassword = () => setIsPasswordShown(show => !show)
+  
+  // Fetch organizers on component mount
+  useEffect(() => {
+    const fetchOrganizers = async () => {
+      setLoadingOrganizers(true)
+      setOrganizerError(null)
+      
+      try {
+        const response = await getAllOrganizersApi()
+        
+        if (response.success) {
+          setOrganizers(response.data)
+        } else {
+          setOrganizerError(response.error || 'Failed to fetch organizers')
+        }
+      } catch (error) {
+        console.error('Error fetching organizers:', error)
+        setOrganizerError('An unexpected error occurred')
+      } finally {
+        setLoadingOrganizers(false)
+      }
+    }
+    
+    fetchOrganizers()
+  }, [])
+  
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>) => {
+    const { name, value } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name as string]: value
+    }))
+  }
 
   return (
     <div className='flex bs-full justify-center'>
@@ -94,11 +146,27 @@ const Register = ({ mode }: { mode: Mode }) => {
             <Typography className='mbs-1'>Make your app management easy and fun!</Typography>
           </div>
           <form noValidate autoComplete='off' onSubmit={e => e.preventDefault()} className='flex flex-col gap-5'>
-            <TextField autoFocus fullWidth label='Username' />
-            <TextField fullWidth label='Email' />
+            <TextField 
+              autoFocus 
+              fullWidth 
+              label='Username' 
+              name='username'
+              value={formData.username}
+              onChange={handleFormChange}
+            />
+            <TextField 
+              fullWidth 
+              label='Email' 
+              name='email'
+              value={formData.email}
+              onChange={handleFormChange}
+            />
             <TextField
               fullWidth
               label='Password'
+              name='password'
+              value={formData.password}
+              onChange={handleFormChange}
               type={isPasswordShown ? 'text' : 'password'}
               InputProps={{
                 endAdornment: (
@@ -123,6 +191,48 @@ const Register = ({ mode }: { mode: Mode }) => {
                 }
               />
             </div>
+
+            
+            <FormControl fullWidth>
+              <InputLabel id='organizer-label'>
+                Select Organizer
+              </InputLabel>
+              <Select
+                labelId='organizer-label'
+                label='Select Organizer'
+                name='organizerId'
+                value={formData.organizerId}
+                onChange={handleFormChange}
+                disabled={loadingOrganizers}
+              >
+                {loadingOrganizers ? (
+                  <MenuItem value='' disabled>
+                    <CircularProgress size={20} /> Loading organizers...
+                  </MenuItem>
+                ) : organizerError ? (
+                  <MenuItem value='' disabled>
+                    Error: {organizerError}
+                  </MenuItem>
+                ) : organizers.length === 0 ? (
+                  <MenuItem value='' disabled>
+                    No organizers available
+                  </MenuItem>
+                ) : (
+                  <>
+                    <MenuItem value=''>Select an organizer</MenuItem>
+                    {organizers.map(organizer => (
+                      <MenuItem key={organizer.id} value={organizer.id.toString()}>
+                        {organizer.name} ({organizer.email})
+                      </MenuItem>
+                    ))}
+                  </>
+                )}
+              </Select>
+              <FormHelperText>
+                Select the organizer you are associated with
+              </FormHelperText>
+            </FormControl>
+            
             <Button fullWidth variant='contained' type='submit'>
               Sign Up
             </Button>

@@ -3,7 +3,11 @@
 // React Imports
 import { useState, useEffect } from 'react'
 
+// Navigation Imports
 import { useRouter } from 'next/navigation'
+
+// Auth Imports
+import { useSession } from 'next-auth/react'
 
 // MUI Imports
 import Card from '@mui/material/Card'
@@ -21,36 +25,63 @@ const TotalRevenue = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const { data: session } = useSession()
 
   useEffect(() => {
     const fetchTotalRevenue = async () => {
       try {
         setLoading(true)
-
+        
+        // Get organizerId from session
+        const organizerId = session?.user?.organizerId
+        
         // Get the current year
         const currentYear = new Date().getFullYear()
-
-        // Use the monthly gross API endpoint
-        const response = await fetchWithAuthFallback(
-          API_ENDPOINTS.TRANSACTIONS.MONTHLY_GROSS(currentYear)
-        )
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch revenue data')
+        
+        let response;
+        let result;
+        
+        // Only use organizer endpoint if organizerId exists and is not 0
+        if (organizerId && organizerId !== 0 && organizerId !== '0') {
+          console.log('Fetching revenue for organizer:', organizerId)
+          response = await fetchWithAuthFallback(API_ENDPOINTS.TRANSACTIONS.ORGANIZER(organizerId))
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch organizer revenue data')
+          }
+          
+          const responseText = await response.text()
+          
+          if (!responseText) {
+            throw new Error('Empty response from server')
+          }
+          
+          result = JSON.parse(responseText)
+          console.log('Organizer revenue data:', result)
+          
+          // Set the total revenue from the organizer's data
+          setTotalRevenue(result.data?.total_amount || 0)
+        } else {
+          // For admin users, fetch overall revenue data
+          console.log('Fetching overall revenue data (admin view)')
+          response = await fetchWithAuthFallback(API_ENDPOINTS.TRANSACTIONS.MONTHLY_GROSS(currentYear))
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch revenue data')
+          }
+          
+          const responseText = await response.text()
+          
+          if (!responseText) {
+            throw new Error('Empty response from server')
+          }
+          
+          result = JSON.parse(responseText)
+          console.log('Total revenue data:', result)
+          
+          // Set the total revenue from the API response
+          setTotalRevenue(result.data?.year_total || 0)
         }
-
-        const responseText = await response.text()
-
-        if (!responseText) {
-          throw new Error('Empty response from server')
-        }
-
-        const result = JSON.parse(responseText)
-        console.log('Total revenue data:', result)
-
-        // Set the total revenue from the API response
-
-        setTotalRevenue(result.data.year_total)
       } catch (err) {
         console.error('Error fetching total revenue:', err)
 
@@ -63,13 +94,20 @@ const TotalRevenue = () => {
     }
 
     fetchTotalRevenue()
-  }, [])
+  }, [session?.user?.organizerId])
 
   const handleViewAll = () => {
     // Get the current language from the URL
     const lang = window.location.pathname.split('/')[1] || 'en'
+    const organizerId = session?.user?.organizerId
 
-    router.push(`/${lang}/event-transactions`)
+    if (organizerId && organizerId !== 0 && organizerId !== '0') {
+      // If user is an event organizer, direct to their orders page
+      router.push(`/${lang}/orders`)
+    } else {
+      // If user is an admin, direct to the general transactions page
+      router.push(`/${lang}/event-transactions`)
+    }
   }
 
   // Format the revenue as IDR currency

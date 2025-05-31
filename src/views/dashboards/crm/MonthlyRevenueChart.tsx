@@ -3,6 +3,9 @@
 // React Imports
 import { useState, useEffect } from 'react'
 
+// Auth Imports
+import { useSession } from 'next-auth/react'
+
 // MUI Imports
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
@@ -43,30 +46,37 @@ interface MonthlyGrossResponse {
 const MonthlyRevenueChart = () => {
   // State for year filter and data
   const [year, setYear] = useState<string>(new Date().getFullYear().toString())
-
   const [loading, setLoading] = useState<boolean>(true)
-
   const [error, setError] = useState<string | null>(null)
-
   const [chartData, setChartData] = useState<{
     year_total: number
     monthly_totals: MonthlyTotal[]
   } | null>(null)
+  
+  // Get session data for user role
+  const { data: session } = useSession()
+  
+  // Check if user is an EO or admin
+  const organizerId = session?.user?.organizerId
+  const isEO = organizerId && organizerId !== 0 && organizerId !== '0'
 
 
   // Available years for the dropdown
   const availableYears = ['2024', '2025']
 
-  // Fetch data when year changes
+  // Fetch data when year changes or session changes
   useEffect(() => {
     const fetchMonthlyGross = async () => {
       try {
         setLoading(true)
         setError(null)
 
-        const response = await fetchWithAuthFallback(
-          API_ENDPOINTS.TRANSACTIONS.MONTHLY_GROSS(parseInt(year))
-        )
+        // Use organizer-specific endpoint if user is an EO, otherwise use the admin endpoint
+        const endpoint = isEO
+          ? API_ENDPOINTS.TRANSACTIONS.ORGANIZER_MONTHLY_GROSS(organizerId, parseInt(year))
+          : API_ENDPOINTS.TRANSACTIONS.MONTHLY_GROSS(parseInt(year))
+
+        const response = await fetchWithAuthFallback(endpoint)
 
         if (!response.ok) {
           throw new Error('Failed to fetch monthly gross data')
@@ -106,7 +116,7 @@ const MonthlyRevenueChart = () => {
     }
 
     fetchMonthlyGross()
-  }, [year])
+  }, [year, session, organizerId, isEO])
 
   // Format the revenue for display (IDR currency)
   const formatRevenue = (value: number) => {
