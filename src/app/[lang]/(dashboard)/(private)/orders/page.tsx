@@ -3,6 +3,9 @@
 // React Imports
 import { useState, useEffect, useCallback, useMemo } from 'react'
 
+// Excel Export
+import * as XLSX from 'xlsx'
+
 // Type Imports
 import type { OrganizerData } from '@/types/organizers'
 import type { Transaction, QuestionAnswer } from '@/types/event-transactions'
@@ -14,43 +17,49 @@ import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 
 // MUI Imports
-import Card from '@mui/material/Card'
-import CardHeader from '@mui/material/CardHeader'
-import Box from '@mui/material/Box'
-import Table from '@mui/material/Table'
-import TableBody from '@mui/material/TableBody'
-import TableCell from '@mui/material/TableCell'
-import TableContainer from '@mui/material/TableContainer'
-import TableHead from '@mui/material/TableHead'
-import TableRow from '@mui/material/TableRow'
-import TablePagination from '@mui/material/TablePagination'
-import TextField from '@mui/material/TextField'
-import InputAdornment from '@mui/material/InputAdornment'
-import CircularProgress from '@mui/material/CircularProgress'
-import Typography from '@mui/material/Typography'
-import Grid from '@mui/material/Grid'
-import Button from '@mui/material/Button'
-import Paper from '@mui/material/Paper'
-import Stack from '@mui/material/Stack'
-import Alert from '@mui/material/Alert'
-import Chip from '@mui/material/Chip'
-import Select from '@mui/material/Select'
-import MenuItem from '@mui/material/MenuItem'
-import FormControl from '@mui/material/FormControl'
-import InputLabel from '@mui/material/InputLabel'
-import Divider from '@mui/material/Divider'
-import Dialog from '@mui/material/Dialog'
-import DialogTitle from '@mui/material/DialogTitle'
-import DialogContent from '@mui/material/DialogContent'
-import DialogActions from '@mui/material/DialogActions'
-import IconButton from '@mui/material/IconButton'
-import Accordion from '@mui/material/Accordion'
-import AccordionSummary from '@mui/material/AccordionSummary'
-import AccordionDetails from '@mui/material/AccordionDetails'
-import Avatar from '@mui/material/Avatar'
-import List from '@mui/material/List'
-import ListItem from '@mui/material/ListItem'
-import ListItemText from '@mui/material/ListItemText'
+import {
+  Box,
+  Card,
+  CardHeader,
+  Chip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Divider,
+  Grid,
+  Typography,
+  Button,
+  CircularProgress,
+  List,
+  ListItem,
+  ListItemText,
+  Avatar,
+  Paper,
+  Tab,
+  Tabs,
+  useTheme,
+  Tooltip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  TextField,
+  InputAdornment,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Stack,
+  Alert,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  IconButton
+} from '@mui/material'
 
 // Third-party Imports
 import { createColumnHelper, flexRender, getCoreRowModel, getPaginationRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table'
@@ -1052,9 +1061,40 @@ const OrdersPage = () => {
   // Hooks
   const router = useRouter()
   const { data: session } = useSession()
+  const theme = useTheme()
   
   // Get organizerId from session
   const organizerId = session?.organizerId || session?.user?.organizerId
+  
+  // Function to export transactions data to Excel
+  const exportToExcel = () => {
+    // Create a formatted dataset for Excel
+    const exportData = transactions.map(transaction => ({
+      'Transaction ID': transaction.short_id,
+      'Event': transaction.event?.title || 'N/A',
+      'Status': transaction.status,
+      'Payment Status': transaction.payment_status || 'N/A',
+      'Customer': `${transaction.firstname || ''} ${transaction.lastname || ''}`,
+      'Email': transaction.email || 'N/A',
+      'Phone': transaction.phone || 'N/A',
+      'Amount': transaction.total_price || 0,
+      'Date': new Date(transaction.created_at).toLocaleDateString(),
+      'Time': new Date(transaction.created_at).toLocaleTimeString()
+    }))
+    
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(exportData)
+    
+    // Create workbook
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Orders')
+    
+    // Generate filename with current date
+    const fileName = `orders_export_${new Date().toISOString().split('T')[0]}.xlsx`
+    
+    // Save file
+    XLSX.writeFile(wb, fileName)
+  }
   
   // Fetch organizer transactions data
   const fetchOrganizerTransactions = useCallback(async () => {
@@ -1300,20 +1340,34 @@ const OrdersPage = () => {
         <CardHeader 
           title="Transactions" 
           action={
-            <TextField
-              placeholder="Search..."
-              value={globalFilter}
-              onChange={e => setGlobalFilter(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <i className="ri-search-line" />
-                  </InputAdornment>
-                )
-              }}
-              size="small"
-              sx={{ width: '250px' }}
-            />
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+              <TextField
+                placeholder="Search..."
+                value={globalFilter}
+                onChange={e => setGlobalFilter(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <i className="ri-search-line" />
+                    </InputAdornment>
+                  )
+                }}
+                size="small"
+                sx={{ width: '250px' }}
+              />
+              <Tooltip title="Export to Excel">
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  size="small"
+                  onClick={exportToExcel}
+                  startIcon={<i className="ri-file-excel-line" />}
+                  disabled={transactions.length === 0 || loading}
+                >
+                  Export
+                </Button>
+              </Tooltip>
+            </Box>
           }
         />
         <Divider />
