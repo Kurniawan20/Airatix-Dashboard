@@ -91,15 +91,9 @@ const TotalRevenue = () => {
   const handleViewAll = () => {
     // Get the current language from the URL
     const lang = window.location.pathname.split('/')[1] || 'en'
-    const organizerId = session?.user?.organizerId
-
-    if (organizerId && organizerId !== 0 && organizerId !== '0') {
-      // If user is an event organizer, direct to their orders page
-      router.push(`/${lang}/orders`)
-    } else {
-      // If user is an admin, direct to the general transactions page
-      router.push(`/${lang}/event-transactions`)
-    }
+    
+    // Direct to orders page
+    router.push(`/${lang}/orders`)
   }
 
   // Format the revenue as IDR currency

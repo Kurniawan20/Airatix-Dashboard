@@ -521,9 +521,10 @@ const OrdersPage = () => {
 
     setLoading(true)
     try {
-      // Use the specific local endpoint for organizer 13
+      // Use the dynamic endpoint with the organizer ID from session
+      console.log('Fetching transactions for organizer ID:', organizerId)
       const response = await fetchWithAuthFallback(
-        API_ENDPOINTS.TRANSACTIONS.LOCAL_ORGANIZER_13
+        API_ENDPOINTS.TRANSACTIONS.LOCAL_ORGANIZER(organizerId)
       )
 
       if (!response.ok) {

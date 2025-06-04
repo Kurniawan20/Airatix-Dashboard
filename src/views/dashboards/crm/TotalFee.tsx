@@ -88,7 +88,7 @@ const TotalFee = () => {
     // Get the current language from the URL
     const lang = window.location.pathname.split('/')[1] || 'en'
 
-    router.push(`/${lang}/event-transactions`)
+    router.push(`/${lang}/orders`)
   }
 
   // Format the fee as IDR currency
