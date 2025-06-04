@@ -1068,19 +1068,27 @@ const OrdersPage = () => {
   
   // Function to export transactions data to Excel
   const exportToExcel = () => {
+    // Get filtered transactions based on current filters
+    const filteredTransactions = filterTransactions();
+    
+    // Log number of transactions being exported
+    console.log(`Exporting ${filteredTransactions.length} transactions with filter: ${statusFilter}`);
+    
     // Create a formatted dataset for Excel
-    const exportData = transactions.map(transaction => ({
-      'Transaction ID': transaction.short_id,
-      'Event': transaction.event?.title || 'N/A',
-      'Status': transaction.status,
-      'Payment Status': transaction.payment_status || 'N/A',
-      'Customer': `${transaction.firstname || ''} ${transaction.lastname || ''}`,
-      'Email': transaction.email || 'N/A',
-      'Phone': transaction.phone || 'N/A',
-      'Amount': transaction.total_price || 0,
-      'Date': new Date(transaction.created_at).toLocaleDateString(),
-      'Time': new Date(transaction.created_at).toLocaleTimeString()
-    }))
+    const exportData = filteredTransactions.map(transaction => {
+      return {
+        'Transaction ID': transaction.short_id,
+        'Event': transaction.event?.title || 'N/A',
+        'Status': transaction.status,
+        'Payment Status': transaction.payment_status || 'N/A',
+        'Customer': `${transaction.firstname || ''} ${transaction.lastname || ''}`,
+        'Email': transaction.email || 'N/A',
+        'Phone': transaction.phone || 'N/A',
+        'Amount': transaction.total_price || 0,
+        'Date': new Date(transaction.created_at).toLocaleDateString(),
+        'Time': new Date(transaction.created_at).toLocaleTimeString()
+      };
+    })
     
     // Create worksheet
     const ws = XLSX.utils.json_to_sheet(exportData)
