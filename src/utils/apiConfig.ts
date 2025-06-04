@@ -44,8 +44,9 @@ export const API_ENDPOINTS = {
       `${API_BASE_URL}/transactions/monthly-gross?year=${year}`,
     ORGANIZER_MONTHLY_GROSS: (organizerId: string | number, year: number = new Date().getFullYear()) =>
       `${API_BASE_URL}/organizers/${organizerId}/transactions/monthly-gross?year=${year}`,
-    LOCAL_ORGANIZER: (organizerId: string | number = 13) => `${API_BASE_URL}/organizers/${organizerId}/transactions`,
-    TOP_EVENTS: (organizerId: string | number = 13) => `${API_BASE_URL}/organizers/${organizerId}/top-events`
+    LOCAL_ORGANIZER: (organizerId = '13') => `${API_BASE_URL}/organizers/${organizerId}/transactions`,
+    TOP_EVENTS: (organizerId = '13') => `${API_BASE_URL}/organizers/${organizerId}/top-events`,
+    PUBLIC_TRANSACTION_DETAIL: (transactionId: string) => `${API_BASE_URL}/transactions/${transactionId}`
   },
   ORGANIZERS: {
     ALL: `${API_BASE_URL}/organizers-public`,

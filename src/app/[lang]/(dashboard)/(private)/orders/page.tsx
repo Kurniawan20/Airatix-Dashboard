@@ -69,6 +69,108 @@ const sanitizeHtml = (html: string | null | undefined): string => {
 // Style Imports
 import styles from '@core/styles/table.module.css'
 
+// Transaction Detail interface based on the new API response
+interface TransactionDetail {
+  transaction_id: number
+  transaction_short_id: string
+  transaction_status: string
+  transaction_created_at: string
+  transaction_updated_at: string
+  total_amount: number
+  total_tax: number
+  total_fee: number
+  net_amount: number
+  event: {
+    event_id: number
+    event_title: string
+    event_status: string
+    event_start_date: string
+    event_end_date: string
+    organizer_id: number
+    organizer_name: string
+  }
+  customer: {
+    first_name: string
+    last_name: string
+    email: string
+    phone: string
+    country: string
+    province: string
+    city: string
+  }
+  transaction_details: {
+    id: number
+    short_id: string
+    status: string
+    total_price: number
+    total_tax: number
+    total_fee: number
+    payment_status: string | null
+    payment_url: string | null
+    created_at: string
+    updated_at: string
+    firstname: string
+    lastname: string
+    id_type: string | null
+    id_number: string | null
+    phone: string | null
+    country: string | null
+    province: string | null
+    city: string | null
+    metadata: string | null
+    event: {
+      id: number
+      title: string
+      description: string
+      start_date: string
+      end_date: string
+      location: string
+      location_details: string | null
+      status: string
+      currency: string
+      timezone: string
+      attributes: any | null
+      created_at: string
+      updated_at: string
+      organizer: {
+        id: number
+        name: string
+        email: string
+      }
+    }
+    tickets: Array<{
+      id: number
+      title: string
+      description: string
+      quantity: number
+      price_paid: number
+      original_price: number
+      attendees: Array<{
+        id: number
+        name: string
+        firstname: string
+        lastname: string
+        email: string
+        check_in_status: string | null
+        short_id: string
+        public_id: string
+        status: string
+        checked_in_at: string | null
+      }>
+    }>
+    question_answers: Array<{
+      id: number
+      question_id: number
+      question_text: string
+      ticket_id: number | null
+      attendee_id: number | null
+      answer: string | any
+      created_at: string
+      updated_at: string
+    }>
+  }
+}
+
 // Transaction Dialog Props interface
 interface TransactionDialogProps {
   open: boolean
@@ -78,13 +180,103 @@ interface TransactionDialogProps {
 
 // Transaction Dialog Component for displaying transaction details
 const TransactionDialog = ({ open, onClose, transaction }: TransactionDialogProps) => {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [transactionDetail, setTransactionDetail] = useState<TransactionDetail | null>(null)
+  
+  // Fetch transaction details when dialog opens
+  useEffect(() => {
+    if (open && transaction) {
+      fetchTransactionDetail(transaction.id.toString())
+    } else {
+      // Reset state when dialog closes
+      setTransactionDetail(null)
+      setError(null)
+    }
+  }, [open, transaction])
+  
+  // Function to fetch transaction details
+  const fetchTransactionDetail = async (transactionId: string) => {
+    setLoading(true)
+    setError(null)
+    
+    try {
+      const response = await fetchWithAuthFallback(
+        API_ENDPOINTS.TRANSACTIONS.PUBLIC_TRANSACTION_DETAIL(transactionId)
+      )
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch transaction details')
+      }
+      
+      const data = await response.json()
+      setTransactionDetail(data.data)
+    } catch (err) {
+      console.error('Error fetching transaction details:', err)
+      setError('Failed to load transaction details. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+  
+  // If transaction is null, don't render anything
   if (!transaction) return null
-
+  
+  // Show loading state
+  if (loading) {
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant='h6'>Transaction Details - #{transaction.short_id}</Typography>
+            <IconButton onClick={onClose} size='small'>
+              <i className='ri-close-line' />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
+            <CircularProgress />
+          </Box>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+  
+  // Show error state
+  if (error) {
+    return (
+      <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant='h6'>Transaction Details - #{transaction.short_id}</Typography>
+            <IconButton onClick={onClose} size='small'>
+              <i className='ri-close-line' />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Alert severity='error' sx={{ mb: 2 }}>{error}</Alert>
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <Button variant='outlined' onClick={() => fetchTransactionDetail(transaction.id.toString())}>
+              Retry
+            </Button>
+          </Box>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+  
+  // Use the detailed transaction data if available, otherwise fall back to the original transaction
+  const detailData = transactionDetail?.transaction_details || transaction
+  
+  // No debug code here to avoid React hooks errors
+  
   return (
     <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
       <DialogTitle>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant='h6'>Transaction Details - #{transaction.short_id}</Typography>
+          <Typography variant='h6'>Transaction Details - #{detailData.short_id}</Typography>
           <IconButton onClick={onClose} size='small'>
             <i className='ri-close-line' />
           </IconButton>
@@ -97,18 +289,18 @@ const TransactionDialog = ({ open, onClose, transaction }: TransactionDialogProp
               <Typography variant='subtitle2' color='text.secondary'>
                 Transaction ID
               </Typography>
-              <Typography>{transaction.id}</Typography>
+              <Typography>{detailData.id}</Typography>
             </Grid>
             <Grid item xs={12} sm={4}>
               <Typography variant='subtitle2' color='text.secondary'>
                 Status
               </Typography>
               <Chip
-                label={transaction.status}
+                label={detailData.status}
                 color={
-                  transaction.status === 'COMPLETED' || transaction.status === 'PAID'
+                  detailData.status === 'COMPLETED' || detailData.status === 'PAID'
                     ? 'success'
-                    : transaction.status === 'RESERVED' || transaction.status === 'PENDING'
+                    : detailData.status === 'RESERVED' || detailData.status === 'PENDING'
                       ? 'warning'
                       : 'error'
                 }
@@ -119,8 +311,30 @@ const TransactionDialog = ({ open, onClose, transaction }: TransactionDialogProp
               <Typography variant='subtitle2' color='text.secondary'>
                 Total Price
               </Typography>
-              <Typography>IDR {transaction.total_price.toLocaleString()}</Typography>
+              <Typography>IDR {detailData.total_price.toLocaleString()}</Typography>
             </Grid>
+            {transactionDetail && (
+              <>
+                <Grid item xs={12} sm={4}>
+                  <Typography variant='subtitle2' color='text.secondary'>
+                    Total Tax
+                  </Typography>
+                  <Typography>IDR {transactionDetail.total_tax.toLocaleString()}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Typography variant='subtitle2' color='text.secondary'>
+                    Total Fee
+                  </Typography>
+                  <Typography>IDR {transactionDetail.total_fee.toLocaleString()}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Typography variant='subtitle2' color='text.secondary'>
+                    Net Amount
+                  </Typography>
+                  <Typography>IDR {transactionDetail.net_amount.toLocaleString()}</Typography>
+                </Grid>
+              </>
+            )}
           </Grid>
         </Box>
 
@@ -134,55 +348,75 @@ const TransactionDialog = ({ open, onClose, transaction }: TransactionDialogProp
               <Typography variant='subtitle2' color='text.secondary'>
                 First Name
               </Typography>
-              <Typography>{transaction.firstname || 'N/A'}</Typography>
+              <Typography>
+                {transactionDetail?.customer?.first_name || detailData.firstname || 'N/A'}
+              </Typography>
             </Grid>
             <Grid item xs={12} sm={4}>
               <Typography variant='subtitle2' color='text.secondary'>
                 Last Name
               </Typography>
-              <Typography>{transaction.lastname || 'N/A'}</Typography>
+              <Typography>
+                {transactionDetail?.customer?.last_name || detailData.lastname || 'N/A'}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Typography variant='subtitle2' color='text.secondary'>
+                Email
+              </Typography>
+              <Typography>
+                {transactionDetail?.customer?.email || 'N/A'}
+              </Typography>
             </Grid>
             <Grid item xs={12} sm={4}>
               <Typography variant='subtitle2' color='text.secondary'>
                 ID Type
               </Typography>
-              <Typography>{transaction.id_type || 'N/A'}</Typography>
+              <Typography>{detailData.id_type || 'N/A'}</Typography>
             </Grid>
             <Grid item xs={12} sm={4}>
               <Typography variant='subtitle2' color='text.secondary'>
                 ID Number
               </Typography>
-              <Typography>{transaction.id_number || 'N/A'}</Typography>
+              <Typography>{detailData.id_number || 'N/A'}</Typography>
             </Grid>
             <Grid item xs={12} sm={4}>
               <Typography variant='subtitle2' color='text.secondary'>
                 Phone
               </Typography>
-              <Typography>{transaction.phone || 'N/A'}</Typography>
+              <Typography>
+                {transactionDetail?.customer?.phone || detailData.phone || 'N/A'}
+              </Typography>
             </Grid>
             <Grid item xs={12} sm={4}>
               <Typography variant='subtitle2' color='text.secondary'>
                 Country
               </Typography>
-              <Typography>{transaction.country || 'N/A'}</Typography>
+              <Typography>
+                {transactionDetail?.customer?.country || detailData.country || 'N/A'}
+              </Typography>
             </Grid>
             <Grid item xs={12} sm={4}>
               <Typography variant='subtitle2' color='text.secondary'>
                 Province
               </Typography>
-              <Typography>{transaction.province || 'N/A'}</Typography>
+              <Typography>
+                {transactionDetail?.customer?.province || detailData.province || 'N/A'}
+              </Typography>
             </Grid>
             <Grid item xs={12} sm={4}>
               <Typography variant='subtitle2' color='text.secondary'>
                 City
               </Typography>
-              <Typography>{transaction.city || 'N/A'}</Typography>
+              <Typography>
+                {transactionDetail?.customer?.city || detailData.city || 'N/A'}
+              </Typography>
             </Grid>
           </Grid>
         </Box>
 
         {/* Event Information */}
-        {transaction.event && (
+        {(detailData.event || transactionDetail?.event) && (
           <>
             <Typography variant='h6' gutterBottom>
               Event Information
@@ -193,24 +427,136 @@ const TransactionDialog = ({ open, onClose, transaction }: TransactionDialogProp
                   <Typography variant='subtitle2' color='text.secondary'>
                     Event Title
                   </Typography>
-                  <Typography>{transaction.event.title}</Typography>
+                  <Typography>
+                    {transactionDetail?.event?.event_title || detailData.event?.title || 'N/A'}
+                  </Typography>
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <Typography variant='subtitle2' color='text.secondary'>
                     Event Date
                   </Typography>
                   <Typography>
-                    {new Date(transaction.event.start_date).toLocaleDateString()} - {new Date(transaction.event.end_date).toLocaleDateString()}
+                    {new Date(transactionDetail?.event?.event_start_date || detailData.event?.start_date).toLocaleDateString()} - 
+                    {new Date(transactionDetail?.event?.event_end_date || detailData.event?.end_date).toLocaleDateString()}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant='subtitle2' color='text.secondary'>
+                    Event Status
+                  </Typography>
+                  <Chip
+                    label={transactionDetail?.event?.event_status || detailData.event?.status || 'N/A'}
+                    color={
+                      (transactionDetail?.event?.event_status || detailData.event?.status) === 'LIVE' ? 'success' : 'default'
+                    }
+                    size='small'
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant='subtitle2' color='text.secondary'>
+                    Organizer
+                  </Typography>
+                  <Typography>
+                    {transactionDetail?.event?.organizer_name || detailData.event?.organizer?.name || 'N/A'}
                   </Typography>
                 </Grid>
                 <Grid item xs={12}>
                   <Typography variant='subtitle2' color='text.secondary'>
                     Location
                   </Typography>
-                  <Typography>{transaction.event.location || 'N/A'}</Typography>
+                  <Typography>
+                    {detailData.event?.location || 'N/A'}
+                  </Typography>
                 </Grid>
               </Grid>
             </Box>
+          </>
+        )}
+
+        {/* Question Answers Section */}
+        {detailData.question_answers && Array.isArray(detailData.question_answers) && detailData.question_answers.length > 0 && (
+          <>
+            <Typography variant='h6' gutterBottom>
+              Form Responses
+            </Typography>
+            <Paper variant='outlined' sx={{ p: 2, mb: 3 }}>
+              <List dense>
+                {detailData.question_answers
+                  .filter(qa => !qa.attendee_id) // Only show general questions (not attendee-specific)
+                  .map((qa, qaIndex) => {
+                    // Skip if question answer is invalid
+                    if (!qa || typeof qa !== 'object') {
+                      return null;
+                    }
+                    // Format the answer based on its type
+                    let isObject = false;
+                    let isAddress = false;
+                    
+                    // Check if the answer is an object (like address)
+                    if (typeof qa.answer === 'object' && qa.answer !== null) {
+                      isObject = true;
+                      
+                      // Check if it's specifically an address object
+                      if (qa.answer && 
+                          typeof qa.answer === 'object' && 
+                          'city' in qa.answer && 
+                          'country' in qa.answer && 
+                          'address_line_1' in qa.answer) {
+                        isAddress = true;
+                      }
+                    }
+                    
+                    // Check if the answer is a date string
+                    const isDate = typeof qa.answer === 'string' && 
+                      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(qa.answer);
+                    
+                    return (
+                      <ListItem key={qa.id || `qa-${qaIndex}`} divider>
+                        <ListItemText
+                          primary={
+                            <Typography variant='subtitle2'>
+                              {qa.question_text || 'Question'}
+                              {qa.ticket_id && (
+                                <Chip 
+                                  label={`Ticket #${qa.ticket_id}`} 
+                                  size='small' 
+                                  color='primary' 
+                                  sx={{ ml: 1 }}
+                                />
+                              )}
+                            </Typography>
+                          }
+                          secondary={
+                            isAddress ? (
+                              <Box sx={{ mt: 1 }}>
+                                <Typography variant="body2">{qa.answer.address_line_1}</Typography>
+                                <Typography variant="body2">
+                                  {qa.answer.city}
+                                  {qa.answer.state_or_region ? `, ${qa.answer.state_or_region}` : ''} 
+                                  {qa.answer.zip_or_postal_code ? qa.answer.zip_or_postal_code : ''}
+                                </Typography>
+                                <Typography variant="body2">{qa.answer.country}</Typography>
+                              </Box>
+                            ) : isObject ? (
+                              <Box sx={{ mt: 1 }}>
+                                {Object.entries(qa.answer || {}).map(([key, value]) => (
+                                  <Typography key={key} variant="body2">
+                                    <strong>{key.replace(/_/g, ' ')}:</strong> {String(value || '')}
+                                  </Typography>
+                                ))}
+                              </Box>
+                            ) : isDate ? (
+                              new Date(qa.answer).toLocaleString()
+                            ) : (
+                              qa.answer
+                            )
+                          }
+                        />
+                      </ListItem>
+                    );
+                  })}
+              </List>
+            </Paper>
           </>
         )}
 
@@ -219,8 +565,8 @@ const TransactionDialog = ({ open, onClose, transaction }: TransactionDialogProp
           Tickets
         </Typography>
 
-        {transaction.tickets && transaction.tickets.length > 0 ? (
-          transaction.tickets.map((ticket, index) => (
+        {detailData.tickets && detailData.tickets.length > 0 ? (
+          detailData.tickets.map((ticket, index) => (
             <Accordion key={ticket.id} defaultExpanded={index === 0}>
               <AccordionSummary expandIcon={<i className='ri-arrow-down-s-line' />}>
                 <Box
@@ -288,6 +634,106 @@ const TransactionDialog = ({ open, onClose, transaction }: TransactionDialogProp
                               size='small'
                             />
                           </Box>
+                          
+                          {/* Attendee-specific question answers */}
+                          {detailData.question_answers && Array.isArray(detailData.question_answers) && (
+                            <>
+                              {detailData.question_answers
+                                .filter(qa => {
+                                  // Try to match by attendee ID
+                                  if (qa.attendee_id && attendee.id) {
+                                    return qa.attendee_id.toString() === attendee.id.toString();
+                                  }
+                                  // If that fails, try to match by short_id or public_id
+                                  if (qa.attendee_id && attendee.short_id) {
+                                    return qa.attendee_id.toString() === attendee.short_id.toString();
+                                  }
+                                  return false;
+                                })
+                                .length > 0 && (
+                                  <>
+                                    <Divider sx={{ my: 1.5 }} />
+                                    <Typography variant='subtitle2' sx={{ mb: 1 }}>
+                                      Attendee Responses
+                                    </Typography>
+                                    <List dense disablePadding>
+                                      {detailData.question_answers
+                                        .filter(qa => {
+                                          // Try to match by attendee ID
+                                          if (qa.attendee_id && attendee.id) {
+                                            return qa.attendee_id.toString() === attendee.id.toString();
+                                          }
+                                          // If that fails, try to match by short_id or public_id
+                                          if (qa.attendee_id && attendee.short_id) {
+                                            return qa.attendee_id.toString() === attendee.short_id.toString();
+                                          }
+                                          return false;
+                                        })
+                                        .map((qa, qaIndex) => {
+                                          // Format the answer based on its type
+                                          let isObject = false;
+                                          let isAddress = false;
+                                          
+                                          // Check if the answer is an object (like address)
+                                          if (typeof qa.answer === 'object' && qa.answer !== null) {
+                                            isObject = true;
+                                            
+                                            // Check if it's specifically an address object
+                                            if (qa.answer && 
+                                                typeof qa.answer === 'object' && 
+                                                'city' in qa.answer && 
+                                                'country' in qa.answer && 
+                                                'address_line_1' in qa.answer) {
+                                              isAddress = true;
+                                            }
+                                          }
+                                          
+                                          // Check if the answer is a date string
+                                          const isDate = typeof qa.answer === 'string' && 
+                                            /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(qa.answer);
+                                          
+                                          return (
+                                            <ListItem key={qa.id || `qa-${qaIndex}`} disablePadding sx={{ mb: 1 }}>
+                                              <ListItemText
+                                                primary={
+                                                  <Typography variant='body2' sx={{ fontWeight: 500 }}>
+                                                    {qa.question_text || 'Question'}
+                                                  </Typography>
+                                                }
+                                                secondary={
+                                                  isAddress ? (
+                                                    <Box sx={{ mt: 0.5 }}>
+                                                      <Typography variant="caption" display="block">{qa.answer.address_line_1}</Typography>
+                                                      <Typography variant="caption" display="block">
+                                                        {qa.answer.city}
+                                                        {qa.answer.state_or_region ? `, ${qa.answer.state_or_region}` : ''} 
+                                                        {qa.answer.zip_or_postal_code ? qa.answer.zip_or_postal_code : ''}
+                                                      </Typography>
+                                                      <Typography variant="caption" display="block">{qa.answer.country}</Typography>
+                                                    </Box>
+                                                  ) : isObject ? (
+                                                    <Box sx={{ mt: 0.5 }}>
+                                                      {Object.entries(qa.answer || {}).map(([key, value]) => (
+                                                        <Typography key={key} variant="caption" display="block">
+                                                          <strong>{key.replace(/_/g, ' ')}:</strong> {String(value || '')}
+                                                        </Typography>
+                                                      ))}
+                                                    </Box>
+                                                  ) : isDate ? (
+                                                    <Typography variant="caption">{new Date(qa.answer).toLocaleString()}</Typography>
+                                                  ) : (
+                                                    <Typography variant="caption">{qa.answer}</Typography>
+                                                  )
+                                                }
+                                              />
+                                            </ListItem>
+                                          );
+                                        })}
+                                    </List>
+                                  </>
+                                )}
+                            </>
+                          )}
                         </Paper>
                       </Grid>
                     ))}
@@ -320,6 +766,106 @@ const TransactionDialog = ({ open, onClose, transaction }: TransactionDialogProp
                               size='small'
                             />
                           </Box>
+                          
+                          {/* Attendee-specific question answers */}
+                          {detailData.question_answers && Array.isArray(detailData.question_answers) && (
+                            <>
+                              {detailData.question_answers
+                                .filter(qa => {
+                                  // Try to match by attendee ID
+                                  if (qa.attendee_id && attendee.id) {
+                                    return qa.attendee_id.toString() === attendee.id.toString();
+                                  }
+                                  // If that fails, try to match by short_id or public_id
+                                  if (qa.attendee_id && attendee.short_id) {
+                                    return qa.attendee_id.toString() === attendee.short_id.toString();
+                                  }
+                                  return false;
+                                })
+                                .length > 0 && (
+                                  <>
+                                    <Divider sx={{ my: 1.5 }} />
+                                    <Typography variant='subtitle2' sx={{ mb: 1 }}>
+                                      Attendee Responses
+                                    </Typography>
+                                    <List dense disablePadding>
+                                      {detailData.question_answers
+                                        .filter(qa => {
+                                          // Try to match by attendee ID
+                                          if (qa.attendee_id && attendee.id) {
+                                            return qa.attendee_id.toString() === attendee.id.toString();
+                                          }
+                                          // If that fails, try to match by short_id or public_id
+                                          if (qa.attendee_id && attendee.short_id) {
+                                            return qa.attendee_id.toString() === attendee.short_id.toString();
+                                          }
+                                          return false;
+                                        })
+                                        .map((qa, qaIndex) => {
+                                          // Format the answer based on its type
+                                          let isObject = false;
+                                          let isAddress = false;
+                                          
+                                          // Check if the answer is an object (like address)
+                                          if (typeof qa.answer === 'object' && qa.answer !== null) {
+                                            isObject = true;
+                                            
+                                            // Check if it's specifically an address object
+                                            if (qa.answer && 
+                                                typeof qa.answer === 'object' && 
+                                                'city' in qa.answer && 
+                                                'country' in qa.answer && 
+                                                'address_line_1' in qa.answer) {
+                                              isAddress = true;
+                                            }
+                                          }
+                                          
+                                          // Check if the answer is a date string
+                                          const isDate = typeof qa.answer === 'string' && 
+                                            /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(qa.answer);
+                                          
+                                          return (
+                                            <ListItem key={qa.id || `qa-${qaIndex}`} disablePadding sx={{ mb: 1 }}>
+                                              <ListItemText
+                                                primary={
+                                                  <Typography variant='body2' sx={{ fontWeight: 500 }}>
+                                                    {qa.question_text || 'Question'}
+                                                  </Typography>
+                                                }
+                                                secondary={
+                                                  isAddress ? (
+                                                    <Box sx={{ mt: 0.5 }}>
+                                                      <Typography variant="caption" display="block">{qa.answer.address_line_1}</Typography>
+                                                      <Typography variant="caption" display="block">
+                                                        {qa.answer.city}
+                                                        {qa.answer.state_or_region ? `, ${qa.answer.state_or_region}` : ''} 
+                                                        {qa.answer.zip_or_postal_code ? qa.answer.zip_or_postal_code : ''}
+                                                      </Typography>
+                                                      <Typography variant="caption" display="block">{qa.answer.country}</Typography>
+                                                    </Box>
+                                                  ) : isObject ? (
+                                                    <Box sx={{ mt: 0.5 }}>
+                                                      {Object.entries(qa.answer || {}).map(([key, value]) => (
+                                                        <Typography key={key} variant="caption" display="block">
+                                                          <strong>{key.replace(/_/g, ' ')}:</strong> {String(value || '')}
+                                                        </Typography>
+                                                      ))}
+                                                    </Box>
+                                                  ) : isDate ? (
+                                                    <Typography variant="caption">{new Date(qa.answer).toLocaleString()}</Typography>
+                                                  ) : (
+                                                    <Typography variant="caption">{qa.answer}</Typography>
+                                                  )
+                                                }
+                                              />
+                                            </ListItem>
+                                          );
+                                        })}
+                                    </List>
+                                  </>
+                                )}
+                            </>
+                          )}
                         </Paper>
                       </Grid>
                     ))}
@@ -336,12 +882,12 @@ const TransactionDialog = ({ open, onClose, transaction }: TransactionDialogProp
       </DialogContent>
       <DialogActions sx={{ mt: 2 }}>
         <Button onClick={onClose}>Close</Button>
-        {transaction.payment_url && (
+        {detailData.payment_url && (
           <Button
             variant='contained'
             color='primary'
             startIcon={<i className='ri-bank-card-line' />}
-            onClick={() => window.open(transaction.payment_url, '_blank')}
+            onClick={() => window.open(detailData.payment_url, '_blank')}
           >
             Go to Payment
           </Button>
