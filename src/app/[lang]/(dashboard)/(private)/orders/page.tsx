@@ -666,13 +666,20 @@ const OrdersPage = () => {
   })
 
   // Pagination handlers
-  const handleChangePage = (_: unknown, newPage: number) => {
+  const handleChangePage = (_: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => {
     setPage(newPage)
+    // Update the table's pagination state
+    table.setPageIndex(newPage)
   }
 
   const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10))
+    const newRowsPerPage = parseInt(event.target.value, 10)
+    setRowsPerPage(newRowsPerPage)
     setPage(0)
+    
+    // Update the table's pagination state
+    table.setPageSize(newRowsPerPage)
+    table.setPageIndex(0)
   }
 
   // Render loading state while waiting for session
