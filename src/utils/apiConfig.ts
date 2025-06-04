@@ -43,7 +43,9 @@ export const API_ENDPOINTS = {
     MONTHLY_GROSS: (year: number = new Date().getFullYear()) =>
       `${API_BASE_URL}/transactions/monthly-gross?year=${year}`,
     ORGANIZER_MONTHLY_GROSS: (organizerId: string | number, year: number = new Date().getFullYear()) =>
-      `${API_BASE_URL}/organizers/${organizerId}/transactions/monthly-gross?year=${year}`
+      `${API_BASE_URL}/organizers/${organizerId}/transactions/monthly-gross?year=${year}`,
+    LOCAL_ORGANIZER: (organizerId: string | number = 13) => `http://localhost:8000/public/organizers/${organizerId}/transactions`,
+    TOP_EVENTS: (organizerId: string | number = 13) => `http://localhost:8000/public/organizers/${organizerId}/top-events`
   },
   ORGANIZERS: {
     ALL: `${API_BASE_URL}/organizers-public`,

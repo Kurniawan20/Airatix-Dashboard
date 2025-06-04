@@ -1,3 +1,14 @@
+export interface QuestionAnswer {
+  id: number
+  question_id: number
+  question_text: string
+  ticket_id: number | null
+  attendee_id: number | null
+  answer: string | any // Can be string or object (for address fields)
+  created_at: string
+  updated_at: string
+}
+
 export interface Attendee {
   id: number
   name: string
@@ -60,6 +71,9 @@ export interface Transaction {
   metadata: string | null
   event: EventInfo
   tickets: Ticket[]
+  question_answers?: QuestionAnswer[] // Added question_answers field
+  firstname?: string
+  lastname?: string
 }
 
 export interface EventSummary {

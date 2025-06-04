@@ -1,7 +1,11 @@
 'use client'
 
 // React Imports
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
+
+// Type Imports
+import type { OrganizerData } from '@/types/organizers'
+import type { Transaction, QuestionAnswer } from '@/types/event-transactions'
 
 // Next Imports
 import { useRouter } from 'next/navigation'
@@ -30,15 +34,322 @@ import Paper from '@mui/material/Paper'
 import Stack from '@mui/material/Stack'
 import Alert from '@mui/material/Alert'
 import Chip from '@mui/material/Chip'
+import Select from '@mui/material/Select'
+import MenuItem from '@mui/material/MenuItem'
+import FormControl from '@mui/material/FormControl'
+import InputLabel from '@mui/material/InputLabel'
+import Divider from '@mui/material/Divider'
+import Dialog from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
+import DialogContent from '@mui/material/DialogContent'
+import DialogActions from '@mui/material/DialogActions'
+import IconButton from '@mui/material/IconButton'
+import Accordion from '@mui/material/Accordion'
+import AccordionSummary from '@mui/material/AccordionSummary'
+import AccordionDetails from '@mui/material/AccordionDetails'
+import Avatar from '@mui/material/Avatar'
+import List from '@mui/material/List'
+import ListItem from '@mui/material/ListItem'
+import ListItemText from '@mui/material/ListItemText'
 
 // Third-party Imports
-import { createColumnHelper, flexRender, getCoreRowModel, getPaginationRowModel, useReactTable } from '@tanstack/react-table'
+import { createColumnHelper, flexRender, getCoreRowModel, getPaginationRowModel, getFilteredRowModel, useReactTable } from '@tanstack/react-table'
 
 // API Config Imports
 import { API_ENDPOINTS, fetchWithAuthFallback } from '@/utils/apiConfig'
 
+// Helper function to sanitize HTML content
+const sanitizeHtml = (html: string | null | undefined): string => {
+  if (!html) return ''
+
+  // Basic sanitization
+  return html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+}
+
 // Style Imports
 import styles from '@core/styles/table.module.css'
+
+// Transaction Dialog Props interface
+interface TransactionDialogProps {
+  open: boolean
+  onClose: () => void
+  transaction: Transaction | null
+}
+
+// Transaction Dialog Component for displaying transaction details
+const TransactionDialog = ({ open, onClose, transaction }: TransactionDialogProps) => {
+  if (!transaction) return null
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
+      <DialogTitle>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant='h6'>Transaction Details - #{transaction.short_id}</Typography>
+          <IconButton onClick={onClose} size='small'>
+            <i className='ri-close-line' />
+          </IconButton>
+        </Box>
+      </DialogTitle>
+      <DialogContent dividers>
+        <Box sx={{ mb: 3 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={4}>
+              <Typography variant='subtitle2' color='text.secondary'>
+                Transaction ID
+              </Typography>
+              <Typography>{transaction.id}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Typography variant='subtitle2' color='text.secondary'>
+                Status
+              </Typography>
+              <Chip
+                label={transaction.status}
+                color={
+                  transaction.status === 'COMPLETED' || transaction.status === 'PAID'
+                    ? 'success'
+                    : transaction.status === 'RESERVED' || transaction.status === 'PENDING'
+                      ? 'warning'
+                      : 'error'
+                }
+                size='small'
+              />
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Typography variant='subtitle2' color='text.secondary'>
+                Total Price
+              </Typography>
+              <Typography>IDR {transaction.total_price.toLocaleString()}</Typography>
+            </Grid>
+          </Grid>
+        </Box>
+
+        {/* Customer Information Section */}
+        <Typography variant='h6' gutterBottom>
+          Customer Information
+        </Typography>
+        <Box sx={{ mb: 3 }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={4}>
+              <Typography variant='subtitle2' color='text.secondary'>
+                First Name
+              </Typography>
+              <Typography>{transaction.firstname || 'N/A'}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Typography variant='subtitle2' color='text.secondary'>
+                Last Name
+              </Typography>
+              <Typography>{transaction.lastname || 'N/A'}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Typography variant='subtitle2' color='text.secondary'>
+                ID Type
+              </Typography>
+              <Typography>{transaction.id_type || 'N/A'}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Typography variant='subtitle2' color='text.secondary'>
+                ID Number
+              </Typography>
+              <Typography>{transaction.id_number || 'N/A'}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Typography variant='subtitle2' color='text.secondary'>
+                Phone
+              </Typography>
+              <Typography>{transaction.phone || 'N/A'}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Typography variant='subtitle2' color='text.secondary'>
+                Country
+              </Typography>
+              <Typography>{transaction.country || 'N/A'}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Typography variant='subtitle2' color='text.secondary'>
+                Province
+              </Typography>
+              <Typography>{transaction.province || 'N/A'}</Typography>
+            </Grid>
+            <Grid item xs={12} sm={4}>
+              <Typography variant='subtitle2' color='text.secondary'>
+                City
+              </Typography>
+              <Typography>{transaction.city || 'N/A'}</Typography>
+            </Grid>
+          </Grid>
+        </Box>
+
+        {/* Event Information */}
+        {transaction.event && (
+          <>
+            <Typography variant='h6' gutterBottom>
+              Event Information
+            </Typography>
+            <Box sx={{ mb: 3 }}>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant='subtitle2' color='text.secondary'>
+                    Event Title
+                  </Typography>
+                  <Typography>{transaction.event.title}</Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Typography variant='subtitle2' color='text.secondary'>
+                    Event Date
+                  </Typography>
+                  <Typography>
+                    {new Date(transaction.event.start_date).toLocaleDateString()} - {new Date(transaction.event.end_date).toLocaleDateString()}
+                  </Typography>
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography variant='subtitle2' color='text.secondary'>
+                    Location
+                  </Typography>
+                  <Typography>{transaction.event.location || 'N/A'}</Typography>
+                </Grid>
+              </Grid>
+            </Box>
+          </>
+        )}
+
+        {/* Tickets Section */}
+        <Typography variant='h6' gutterBottom>
+          Tickets
+        </Typography>
+
+        {transaction.tickets && transaction.tickets.length > 0 ? (
+          transaction.tickets.map((ticket, index) => (
+            <Accordion key={ticket.id} defaultExpanded={index === 0}>
+              <AccordionSummary expandIcon={<i className='ri-arrow-down-s-line' />}>
+                <Box
+                  sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', pr: 2 }}
+                >
+                  <Typography variant='subtitle1'>
+                    <span dangerouslySetInnerHTML={{ __html: sanitizeHtml(ticket.title) }} />
+                  </Typography>
+                  <Box>
+                    <Chip
+                      label={`${ticket.quantity} ticket${ticket.quantity > 1 ? 's' : ''}`}
+                      size='small'
+                      color='primary'
+                      sx={{ mr: 1 }}
+                    />
+                    <Typography variant='subtitle2' component='span'>
+                      IDR {ticket.price_paid.toLocaleString()}
+                    </Typography>
+                  </Box>
+                </Box>
+              </AccordionSummary>
+              <AccordionDetails>
+                <Box sx={{ mb: 2 }}>
+                  <div
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(ticket.description) }}
+                    style={{
+                      color: 'rgba(58, 53, 65, 0.68)',
+                      fontSize: '0.875rem',
+                      lineHeight: '1.5',
+                      marginBottom: '8px'
+                    }}
+                  />
+                  <Divider sx={{ my: 2 }} />
+                </Box>
+
+                <Typography variant='subtitle2' gutterBottom>
+                  Attendees
+                </Typography>
+
+                {Array.isArray(ticket.attendees) && ticket.attendees.length > 0 ? (
+                  <Grid container spacing={2}>
+                    {ticket.attendees.map(attendee => (
+                      <Grid item xs={12} sm={6} key={attendee.id}>
+                        <Paper variant='outlined' sx={{ p: 2 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                            <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
+                              {attendee.firstname ? attendee.firstname[0] : 'A'}
+                            </Avatar>
+                            <Box>
+                              <Typography variant='subtitle2'>
+                                {attendee.name || `${attendee.firstname} ${attendee.lastname}`}
+                              </Typography>
+                              <Typography variant='body2' color='text.secondary'>
+                                {attendee.email}
+                              </Typography>
+                            </Box>
+                          </Box>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                            <Typography variant='caption' color='text.secondary'>
+                              ID: {attendee.short_id}
+                            </Typography>
+                            <Chip
+                              label={attendee.check_in_status || 'Not Checked In'}
+                              color={attendee.check_in_status === 'CHECKED_IN' ? 'success' : 'default'}
+                              size='small'
+                            />
+                          </Box>
+                        </Paper>
+                      </Grid>
+                    ))}
+                  </Grid>
+                ) : !Array.isArray(ticket.attendees) && Object.keys(ticket.attendees).length > 0 ? (
+                  <Grid container spacing={2}>
+                    {Object.values(ticket.attendees).map(attendee => (
+                      <Grid item xs={12} sm={6} key={attendee.id}>
+                        <Paper variant='outlined' sx={{ p: 2 }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                            <Avatar sx={{ mr: 2, bgcolor: 'primary.main' }}>
+                              {attendee.firstname ? attendee.firstname[0] : 'A'}
+                            </Avatar>
+                            <Box>
+                              <Typography variant='subtitle2'>
+                                {attendee.name || `${attendee.firstname} ${attendee.lastname}`}
+                              </Typography>
+                              <Typography variant='body2' color='text.secondary'>
+                                {attendee.email}
+                              </Typography>
+                            </Box>
+                          </Box>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                            <Typography variant='caption' color='text.secondary'>
+                              ID: {attendee.short_id}
+                            </Typography>
+                            <Chip
+                              label={attendee.check_in_status || 'Not Checked In'}
+                              color={attendee.check_in_status === 'CHECKED_IN' ? 'success' : 'default'}
+                              size='small'
+                            />
+                          </Box>
+                        </Paper>
+                      </Grid>
+                    ))}
+                  </Grid>
+                ) : (
+                  <Typography color='text.secondary'>No attendee information available</Typography>
+                )}
+              </AccordionDetails>
+            </Accordion>
+          ))
+        ) : (
+          <Typography color='text.secondary'>No tickets found for this transaction</Typography>
+        )}
+      </DialogContent>
+      <DialogActions sx={{ mt: 2 }}>
+        <Button onClick={onClose}>Close</Button>
+        {transaction.payment_url && (
+          <Button
+            variant='contained'
+            color='primary'
+            startIcon={<i className='ri-bank-card-line' />}
+            onClick={() => window.open(transaction.payment_url, '_blank')}
+          >
+            Go to Payment
+          </Button>
+        )}
+      </DialogActions>
+    </Dialog>
+  )
+}
 
 // Status chip component for displaying event status
 const StatusChip = ({ status }: { status: string }) => {
@@ -97,17 +408,27 @@ const StatusChip = ({ status }: { status: string }) => {
 }
 
 // Custom component for the action button
-const ActionButton = ({ eventId }: { eventId: number }) => {
-  const router = useRouter()
+const ActionButton = ({ transaction }: { transaction: Transaction }) => {
+  const [open, setOpen] = useState(false)
+  
+  const handleOpen = () => setOpen(true)
+  const handleClose = () => setOpen(false)
   
   return (
-    <Button 
-      variant="outlined" 
-      size="small"
-      onClick={() => router.push(`/en/event-transactions/event/${eventId}`)}
-    >
-      View
-    </Button>
+    <>
+      <Button 
+        variant="outlined" 
+        size="small"
+        onClick={handleOpen}
+      >
+        View
+      </Button>
+      <TransactionDialog 
+        open={open} 
+        onClose={handleClose} 
+        transaction={transaction} 
+      />
+    </>
   )
 }
 
@@ -115,33 +436,37 @@ const ActionButton = ({ eventId }: { eventId: number }) => {
 const columnHelper = createColumnHelper<any>()
 
 const columns = [
-  columnHelper.accessor('event_title', {
-    header: 'Event Title',
-    cell: info => info.getValue()
+  columnHelper.accessor('short_id', {
+    header: 'Transaction ID',
+    cell: ({ row }) => <Typography variant='body2'>{row.original.short_id}</Typography>
   }),
-  columnHelper.accessor('event_status', {
+  columnHelper.accessor('event.title', {
+    header: 'Event',
+    cell: ({ row }) => <Typography variant='body2'>{row.original.event?.title || 'N/A'}</Typography>
+  }),
+  columnHelper.accessor('status', {
     header: 'Status',
-    cell: info => <StatusChip status={info.getValue() || 'RESERVED'} />
+    cell: ({ row }) => <StatusChip status={row.original.status} />
   }),
-  columnHelper.accessor('event_start_date', {
-    header: 'Start Date',
-    cell: info => new Date(info.getValue()).toLocaleDateString()
+  columnHelper.accessor('payment_status', {
+    header: 'Payment Status',
+    cell: ({ row }) => <Typography variant='body2'>{row.original.payment_status || 'N/A'}</Typography>
   }),
-  columnHelper.accessor('event_end_date', {
-    header: 'End Date',
-    cell: info => new Date(info.getValue()).toLocaleDateString()
+  columnHelper.accessor('firstname', {
+    header: 'Customer',
+    cell: ({ row }) => <Typography variant='body2'>{`${row.original.firstname || ''} ${row.original.lastname || ''}`}</Typography>
   }),
-  columnHelper.accessor('transaction_count', {
-    header: 'Transactions',
-    cell: info => info.getValue()
+  columnHelper.accessor('total_price', {
+    header: 'Amount',
+    cell: ({ row }) => <Typography variant='body2'>IDR {row.original.total_price?.toLocaleString() || '0'}</Typography>
   }),
-  columnHelper.accessor('total_amount', {
-    header: 'Total Amount',
-    cell: info => `IDR ${info.getValue().toLocaleString()}`
+  columnHelper.accessor('created_at', {
+    header: 'Date',
+    cell: ({ row }) => <Typography variant='body2'>{new Date(row.original.created_at).toLocaleDateString()}</Typography>
   }),
-  columnHelper.accessor('event_id', {
+  columnHelper.accessor('id', {
     header: 'Actions',
-    cell: info => <ActionButton eventId={info.getValue()} />
+    cell: ({ row }) => <ActionButton transaction={row.original} />
   })
 ]
 
@@ -165,13 +490,18 @@ interface EventData {
 
 const OrdersPage = () => {
   // State
-  const [events, setEvents] = useState<EventData[]>([])
+  const [transactions, setTransactions] = useState<any[]>([])
   const [organizerInfo, setOrganizerInfo] = useState<OrganizerData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [globalFilter, setGlobalFilter] = useState('')
+  
+  // Filter states
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [startDate, setStartDate] = useState<string>('')
+  const [endDate, setEndDate] = useState<string>('')
 
   // Hooks
   const router = useRouter()
@@ -191,9 +521,9 @@ const OrdersPage = () => {
 
     setLoading(true)
     try {
-      // API call using the session's organizerId
+      // Use the specific local endpoint for organizer 13
       const response = await fetchWithAuthFallback(
-        API_ENDPOINTS.TRANSACTIONS.ORGANIZER(organizerId)
+        API_ENDPOINTS.TRANSACTIONS.LOCAL_ORGANIZER_13
       )
 
       if (!response.ok) {
@@ -203,11 +533,52 @@ const OrdersPage = () => {
       const responseData = await response.json()
 
       if (responseData && responseData.data) {
-        const { events: eventData, ...orgInfo } = responseData.data
+        console.log('API response data:', responseData.data)
+        
+        // Extract organizer info
+        const orgInfo = {
+          organizer_id: '13',  // Hardcoded for the local endpoint
+          organizer_name: 'Organizer 13',
+          organizer_email: responseData.data.organizer_email || 'organizer13@example.com',
+          total_amount: parseFloat(responseData.data.total_amount || '0'),
+          total_transactions: responseData.data.total_transactions || 0
+        }
+        
         setOrganizerInfo(orgInfo)
-        setEvents(eventData || [])
+        
+        // Check if transactions array exists
+        if (responseData.data.transactions && Array.isArray(responseData.data.transactions)) {
+          console.log('Found transactions:', responseData.data.transactions.length)
+          setTransactions(responseData.data.transactions)
+        } else {
+          // If no transactions array, check if we have events with transactions
+          if (responseData.data.events && Array.isArray(responseData.data.events)) {
+            // Collect all transactions from all events
+            const allTransactions = []
+            responseData.data.events.forEach(event => {
+              if (event.transactions && Array.isArray(event.transactions)) {
+                // Add event info to each transaction
+                const transactionsWithEventInfo = event.transactions.map(transaction => ({
+                  ...transaction,
+                  event: {
+                    id: event.event_id,
+                    title: event.event_title,
+                    status: event.event_status
+                  }
+                }))
+                allTransactions.push(...transactionsWithEventInfo)
+              }
+            })
+            
+            console.log('Extracted transactions from events:', allTransactions.length)
+            setTransactions(allTransactions)
+          } else {
+            setTransactions([])
+            setError('No transaction data available')
+          }
+        }
       } else {
-        setEvents([])
+        setTransactions([])
         setError('No data available for this organizer')
       }
     } catch (error) {
@@ -225,12 +596,49 @@ const OrdersPage = () => {
     }
   }, [session, fetchOrganizerTransactions])
 
+  // Filter function for transactions
+  const filterTransactions = useCallback(() => {
+    let filtered = [...transactions]
+    
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(transaction => transaction.status === statusFilter)
+    }
+    
+    // Apply date range filter
+    if (startDate) {
+      const start = new Date(startDate)
+      filtered = filtered.filter(transaction => new Date(transaction.created_at) >= start)
+    }
+    
+    if (endDate) {
+      const end = new Date(endDate)
+      // Set end date to end of day
+      end.setHours(23, 59, 59, 999)
+      filtered = filtered.filter(transaction => new Date(transaction.created_at) <= end)
+    }
+    
+    return filtered
+  }, [transactions, statusFilter, startDate, endDate])
+  
+  // Get unique status values for filter dropdown
+  const statusOptions = useMemo(() => {
+    const statuses = new Set<string>()
+    transactions.forEach(transaction => {
+      if (transaction.status) {
+        statuses.add(transaction.status)
+      }
+    })
+    return Array.from(statuses)
+  }, [transactions])
+
   // Table instance with react-table
   const table = useReactTable({
-    data: events,
+    data: filterTransactions(),
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
     state: {
       pagination: {
         pageIndex: page,
@@ -238,9 +646,18 @@ const OrdersPage = () => {
       },
       globalFilter
     },
+    onPaginationChange: (updater) => {
+      // Use the updater function to get the new pagination state
+      const newPagination = typeof updater === 'function' 
+        ? updater({ pageIndex: page, pageSize: rowsPerPage }) 
+        : updater
+      
+      setPage(newPagination.pageIndex)
+      setRowsPerPage(newPagination.pageSize)
+    },
     onGlobalFilterChange: setGlobalFilter,
     manualPagination: false,
-    pageCount: Math.ceil(events.length / rowsPerPage),
+    pageCount: Math.ceil(filterTransactions().length / rowsPerPage),
     
     // Required properties for TypeScript
     filterFns: {},
@@ -327,7 +744,7 @@ const OrdersPage = () => {
 
       <Card>
         <CardHeader 
-          title="Events" 
+          title="Transactions" 
           action={
             <TextField
               placeholder="Search..."
@@ -345,14 +762,66 @@ const OrdersPage = () => {
             />
           }
         />
+        <Divider />
+        
+        {/* Filter controls */}
+        <Box sx={{ p: 2, display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel id="status-filter-label">Status</InputLabel>
+            <Select
+              labelId="status-filter-label"
+              value={statusFilter}
+              label="Status"
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <MenuItem value="all">All Statuses</MenuItem>
+              {statusOptions.map((status) => (
+                <MenuItem key={status} value={status}>{status}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          
+          <TextField
+            label="Start Date"
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            size="small"
+          />
+          
+          <TextField
+            label="End Date"
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            size="small"
+          />
+          
+          <Button 
+            variant="outlined" 
+            size="small"
+            onClick={() => {
+              setStatusFilter('all')
+              setStartDate('')
+              setEndDate('')
+              setGlobalFilter('')
+            }}
+          >
+            Clear Filters
+          </Button>
+        </Box>
+        
+        <Divider />
         <Box>
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
               <CircularProgress />
             </Box>
-          ) : events.length === 0 ? (
+          ) : transactions.length === 0 ? (
             <Box sx={{ p: 3, textAlign: 'center' }}>
-              <Typography>No events found</Typography>
+              <Typography>No transactions found</Typography>
             </Box>
           ) : (
             <>
@@ -392,7 +861,7 @@ const OrdersPage = () => {
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 2 }}>
                 <TablePagination
                   component="div"
-                  count={events.length}
+                  count={transactions.length}
                   page={page}
                   onPageChange={handleChangePage}
                   rowsPerPage={rowsPerPage}

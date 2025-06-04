@@ -37,12 +37,15 @@ import Accordion from '@mui/material/Accordion'
 import AccordionSummary from '@mui/material/AccordionSummary'
 import AccordionDetails from '@mui/material/AccordionDetails'
 import Avatar from '@mui/material/Avatar'
+import List from '@mui/material/List'
+import ListItem from '@mui/material/ListItem'
+import ListItemText from '@mui/material/ListItemText'
 
 // API Config Imports
 import { API_ENDPOINTS, fetchWithAuthFallback } from '@/utils/apiConfig'
 
 // Type Imports
-import type { Transaction } from '@/types/event-transactions'
+import type { Transaction, QuestionAnswer } from '@/types/event-transactions'
 
 // Style Imports
 import styles from '@core/styles/table.module.css'
@@ -66,10 +69,62 @@ const BackButton = ({ sx }: { sx?: any }) => {
 
 // Helper function to sanitize HTML content
 const sanitizeHtml = (html: string | null | undefined): string => {
-  if (!html) return 'No description available'
+  if (!html) return ''
 
-  // Basic sanitization - remove potentially harmful script tags
-  return html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '').replace(/on\w+="[^"]*"/g, '') // Remove inline event handlers
+  // Basic sanitization
+  return html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+}
+
+// Helper function to render formatted answers
+const renderFormattedAnswer = (qa: QuestionAnswer) => {
+  let isObject = false
+  let isAddress = false
+  
+  // Check if the answer is an object (like address)
+  if (typeof qa.answer === 'object' && qa.answer !== null) {
+    isObject = true
+    
+    // Check if it's specifically an address object
+    if (qa.answer && 
+        typeof qa.answer === 'object' && 
+        'city' in qa.answer && 
+        'country' in qa.answer && 
+        'address_line_1' in qa.answer) {
+      isAddress = true
+    }
+  }
+  
+  // Check if the answer is a date string
+  const isDate = typeof qa.answer === 'string' && 
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(qa.answer)
+  
+  if (isAddress) {
+    return (
+      <Box sx={{ mt: 0.5 }}>
+        <Typography variant="caption" display="block">{qa.answer.address_line_1}</Typography>
+        <Typography variant="caption" display="block">
+          {qa.answer.city}
+          {qa.answer.state_or_region ? `, ${qa.answer.state_or_region}` : ''} 
+          {qa.answer.zip_or_postal_code ? qa.answer.zip_or_postal_code : ''}
+        </Typography>
+        <Typography variant="caption" display="block">{qa.answer.country}</Typography>
+      </Box>
+    )
+  } else if (isObject) {
+    return (
+      <Box sx={{ mt: 0.5 }}>
+        {Object.entries(qa.answer || {}).map(([key, value]) => (
+          <Typography key={key} variant="caption" display="block">
+            <strong>{key.replace(/_/g, ' ')}:</strong> {String(value || '')}
+          </Typography>
+        ))}
+      </Box>
+    )
+  } else if (isDate) {
+    return <Typography variant="caption">{new Date(qa.answer).toLocaleString()}</Typography>
+  } else {
+    return <Typography variant="caption">{qa.answer}</Typography>
+  }
 }
 
 // Ticket Dialog Component
@@ -182,6 +237,93 @@ const TicketDialog = ({ open, onClose, transaction }: TicketDialogProps) => {
             </Grid>
           </Grid>
         </Box>
+
+        {/* Question Answers Section */}
+        {transaction.question_answers && Array.isArray(transaction.question_answers) && transaction.question_answers.length > 0 && (
+          <>
+            <Typography variant='h6' gutterBottom>
+              Form Responses
+            </Typography>
+            <Paper variant='outlined' sx={{ p: 2, mb: 3 }}>
+              <List dense>
+                {transaction.question_answers
+                  .filter(qa => !qa.attendee_id) // Only show general questions (not attendee-specific)
+                  .map((qa, qaIndex) => {
+                    // Skip if question answer is invalid
+                    if (!qa || typeof qa !== 'object') {
+                      return null;
+                    }
+                    // Format the answer based on its type
+                    let isObject = false;
+                    let isAddress = false;
+                    
+                    // Check if the answer is an object (like address)
+                    if (typeof qa.answer === 'object' && qa.answer !== null) {
+                      isObject = true;
+                      
+                      // Check if it's specifically an address object
+                      if (qa.answer && 
+                          typeof qa.answer === 'object' && 
+                          'city' in qa.answer && 
+                          'country' in qa.answer && 
+                          'address_line_1' in qa.answer) {
+                        isAddress = true;
+                      }
+                    }
+                    
+                    // Check if the answer is a date string
+                    const isDate = typeof qa.answer === 'string' && 
+                      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(qa.answer);
+                    
+                    return (
+                      <ListItem key={qa.id || `qa-${qaIndex}`} divider>
+                        <ListItemText
+                          primary={
+                            <Typography variant='subtitle2'>
+                              {qa.question_text || 'Question'}
+                              {qa.ticket_id && (
+                                <Chip 
+                                  label={`Ticket #${qa.ticket_id}`} 
+                                  size='small' 
+                                  color='primary' 
+                                  sx={{ ml: 1 }}
+                                />
+                              )}
+                            </Typography>
+                          }
+                          secondary={
+                            isAddress ? (
+                              <Box sx={{ mt: 1 }}>
+                                <Typography variant="body2">{qa.answer.address_line_1}</Typography>
+                                <Typography variant="body2">
+                                  {qa.answer.city}
+                                  {qa.answer.state_or_region ? `, ${qa.answer.state_or_region}` : ''} 
+                                  {qa.answer.zip_or_postal_code ? qa.answer.zip_or_postal_code : ''}
+                                </Typography>
+                                <Typography variant="body2">{qa.answer.country}</Typography>
+                              </Box>
+                            ) : isObject ? (
+                              <Box sx={{ mt: 1 }}>
+                                {Object.entries(qa.answer || {}).map(([key, value]) => (
+                                  <Typography key={key} variant="body2">
+                                    <strong>{key.replace(/_/g, ' ')}:</strong> {String(value || '')}
+                                  </Typography>
+                                ))}
+                              </Box>
+                            ) : isDate ? (
+                              new Date(qa.answer).toLocaleString()
+                            ) : (
+                              qa.answer
+                            )
+                          }
+                        />
+                      </ListItem>
+                    );
+                  })}
+              </List>
+            </Paper>
+          </>
+        )}
 
         <Typography variant='h6' gutterBottom>
           Tickets

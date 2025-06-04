@@ -41,47 +41,39 @@ const TotalRevenue = () => {
         let response;
         let result;
         
-        // Only use organizer endpoint if organizerId exists and is not 0
-        if (organizerId && organizerId !== 0 && organizerId !== '0') {
-          console.log('Fetching revenue for organizer:', organizerId)
-          response = await fetchWithAuthFallback(API_ENDPOINTS.TRANSACTIONS.ORGANIZER(organizerId))
-          
-          if (!response.ok) {
-            throw new Error('Failed to fetch organizer revenue data')
-          }
-          
-          const responseText = await response.text()
-          
-          if (!responseText) {
-            throw new Error('Empty response from server')
-          }
-          
-          result = JSON.parse(responseText)
-          console.log('Organizer revenue data:', result)
-          
-          // Set the total revenue from the organizer's data
-          setTotalRevenue(result.data?.total_amount || 0)
-        } else {
-          // For admin users, fetch overall revenue data
-          console.log('Fetching overall revenue data (admin view)')
-          response = await fetchWithAuthFallback(API_ENDPOINTS.TRANSACTIONS.MONTHLY_GROSS(currentYear))
-          
-          if (!response.ok) {
-            throw new Error('Failed to fetch revenue data')
-          }
-          
-          const responseText = await response.text()
-          
-          if (!responseText) {
-            throw new Error('Empty response from server')
-          }
-          
-          result = JSON.parse(responseText)
-          console.log('Total revenue data:', result)
-          
-          // Set the total revenue from the API response
-          setTotalRevenue(result.data?.year_total || 0)
+        // Use the dynamic local endpoint with organizer ID from session
+        console.log('Fetching revenue data for organizer:', organizerId)
+        response = await fetchWithAuthFallback(API_ENDPOINTS.TRANSACTIONS.LOCAL_ORGANIZER(organizerId))
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch revenue data')
         }
+        
+        const responseText = await response.text()
+        
+        if (!responseText) {
+          throw new Error('Empty response from server')
+        }
+        
+        result = JSON.parse(responseText)
+        console.log('Total revenue data:', result)
+        
+        // Get the total_amount directly from the API response (completed transactions only)
+        let revenue = 0
+        
+        // Check if we have the total_amount field
+        if (result.data?.total_amount) {
+          console.log('Total revenue (completed):', result.data.total_amount)
+          revenue = parseFloat(result.data.total_amount)
+        } else if (result.data?.organizers && Array.isArray(result.data.organizers)) {
+          // Fallback: Sum up the total_amount from each organizer if the direct field is not available
+          revenue = result.data.organizers.reduce((sum: number, organizer: any) => {
+            console.log('Organizer revenue:', organizer.total_amount)
+            return sum + (organizer.total_amount || 0)
+          }, 0)
+        }
+        
+        setTotalRevenue(revenue)
       } catch (err) {
         console.error('Error fetching total revenue:', err)
 

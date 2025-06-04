@@ -14,7 +14,10 @@ import TotalRevenueWrapper from '@views/dashboards/crm/TotalRevenueWrapper'
 import TotalOrganizersWrapper from '@views/dashboards/crm/TotalOrganizersWrapper'
 import TotalEventsWrapper from '@views/dashboards/crm/TotalEventsWrapper'
 import TotalFeeWrapper from '@views/dashboards/crm/TotalFeeWrapper'
+import TotalTaxWrapper from '@views/dashboards/crm/TotalTaxWrapper'
+import EventInfoSectionWrapper from '@views/dashboards/crm/EventInfoSectionWrapper'
 import MonthlyRevenueChartWrapper from '@views/dashboards/crm/MonthlyRevenueChartWrapper'
+import TopEventsChartWrapper from '@views/dashboards/crm/TopEventsChartWrapper'
 import QuickLinks from '@views/dashboards/crm/QuickLinks'
 
 const DashboardCRM = async () => {
@@ -33,58 +36,48 @@ const DashboardCRM = async () => {
       {/* Stats Cards Row - Horizontal Layout */}
       <Grid item xs={12}>
         <Grid container spacing={6}>
-          <Grid item xs={12} sm={6} md={isAdmin ? 3 : 4}>
+          <Grid item xs={12} sm={6} md={3}>
             <TotalRevenueWrapper />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <TotalTaxWrapper />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <TotalEventsWrapper />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <TotalFeeWrapper />
           </Grid>
           {isAdmin && (
             <Grid item xs={12} sm={6} md={3}>
               <TotalOrganizersWrapper />
             </Grid>
           )}
-          <Grid item xs={12} sm={6} md={isAdmin ? 3 : 4}>
-            <TotalEventsWrapper />
+        </Grid>
+      </Grid>
+
+      {/* Event Info Section */}
+      <Grid item xs={12}>
+        <Card sx={{ p: 4 }}>
+          <EventInfoSectionWrapper />
+        </Card>
+      </Grid>
+
+      {/* Charts Row */}
+      <Grid item xs={12}>
+        <Grid container spacing={6}>
+          {/* Monthly Revenue Chart */}
+          <Grid item xs={12} md={6}>
+            <MonthlyRevenueChartWrapper />
           </Grid>
-          <Grid item xs={12} sm={6} md={isAdmin ? 3 : 4}>
-            <TotalFeeWrapper />
+          {/* Top Events Chart */}
+          <Grid item xs={12} md={6}>
+            <TopEventsChartWrapper />
           </Grid>
         </Grid>
       </Grid>
 
-      {/* Monthly Revenue Chart */}
-      <Grid item xs={12}>
-        <MonthlyRevenueChartWrapper />
-      </Grid>
-
-      {/* Welcome Card and Quick Links */}
-      <Grid item xs={12} md={8}>
-        <Card>
-          <CardContent sx={{ textAlign: 'center', py: 8 }}>
-            <Box sx={{ mb: 4 }}>
-              <Avatar
-                sx={{
-                  width: 100,
-                  height: 100,
-                  margin: '0 auto',
-                  backgroundColor: 'primary.main',
-                  fontSize: '2.5rem'
-                }}
-              >
-                {userName.charAt(0).toUpperCase()}
-              </Avatar>
-            </Box>
-            <Typography variant='h1' sx={{ mb: 4, fontWeight: 500 }}>
-              Welcome
-            </Typography>
-            <Typography variant='h3' color='primary' sx={{ mb: 6 }}>
-              {userName}
-            </Typography>
-            <Typography variant='body1' color='text.secondary'>
-              Manage your event organizers and participants from this dashboard
-            </Typography>
-          </CardContent>
-        </Card>
-      </Grid>
-      {/* QuickLinks component has been removed as per requirements */}
+      {/* Welcome Card has been hidden as per requirements */}
     </Grid>
   )
 }

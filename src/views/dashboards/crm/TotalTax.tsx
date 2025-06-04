@@ -18,22 +18,22 @@ import Button from '@mui/material/Button'
 // API Config Imports
 import { API_ENDPOINTS, fetchWithAuthFallback } from '@/utils/apiConfig'
 
-const TotalFee = () => {
-  const [totalFee, setTotalFee] = useState<number | null>(null)
+const TotalTax = () => {
+  const [totalTax, setTotalTax] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const { data: session } = useSession()
-
+  
   useEffect(() => {
-    const fetchTotalFee = async () => {
+    const fetchTotalTax = async () => {
       try {
         setLoading(true)
         
         // Get organizerId from session
         const organizerId = session?.user?.organizerId || 13
         
-        console.log('Fetching fee data for organizer:', organizerId)
+        console.log('Fetching tax data for organizer:', organizerId)
         
         // Use the dynamic local endpoint with organizer ID from session
         const response = await fetchWithAuthFallback(API_ENDPOINTS.TRANSACTIONS.LOCAL_ORGANIZER(organizerId))
@@ -50,29 +50,29 @@ const TotalFee = () => {
 
         const result = JSON.parse(responseText)
 
-        console.log('Parsed transaction data for fee:', result)
+        console.log('Parsed transaction data for tax:', result)
 
-        // Get the total_fee_all directly from the API response
-        let fee = 0
+        // Get the total_tax_all directly from the API response
+        let tax = 0
         
-        // Check if we have the total_fee_all field
-        if (result.data?.total_fee_all) {
-          console.log('Total fee (all):', result.data.total_fee_all)
-          fee = parseFloat(result.data.total_fee_all)
+        // Check if we have the total_tax_all field
+        if (result.data?.total_tax_all) {
+          console.log('Total tax (all):', result.data.total_tax_all)
+          tax = parseFloat(result.data.total_tax_all)
         } else if (result.data?.organizers && Array.isArray(result.data.organizers)) {
-          // Fallback: Sum up the total_fee_all from each organizer if the direct field is not available
-          fee = result.data.organizers.reduce((sum: number, organizer: any) => {
-            console.log('Organizer fee (all):', organizer.total_fee_all)
-            return sum + (organizer.total_fee_all || 0)
+          // Fallback: Sum up the total_tax_all from each organizer if the direct field is not available
+          tax = result.data.organizers.reduce((sum: number, organizer: any) => {
+            console.log('Organizer tax (all):', organizer.total_tax_all)
+            return sum + (organizer.total_tax_all || 0)
           }, 0)
         }
-
-        setTotalFee(fee)
+        
+        setTotalTax(tax)
       } catch (err: any) {
-        console.error('Error fetching total fee:', err)
+        console.error('Error fetching total tax:', err)
 
-        // Set a default fee to avoid showing an error
-        setTotalFee(0)
+        // Set a default tax to avoid showing an error
+        setTotalTax(0)
         setError('Failed to load transaction data')
       } finally {
         setLoading(false)
@@ -80,27 +80,27 @@ const TotalFee = () => {
     }
 
     if (session) {
-      fetchTotalFee()
+      fetchTotalTax()
     }
   }, [session])
 
   const handleViewAll = () => {
     // Get the current language from the URL
     const lang = window.location.pathname.split('/')[1] || 'en'
-
+    
     router.push(`/${lang}/event-transactions`)
   }
 
-  // Format the fee as IDR currency
-  const formattedFee = totalFee !== null 
-    ? `IDR ${totalFee.toLocaleString()}`
+  // Format the tax as IDR currency
+  const formattedTax = totalTax !== null 
+    ? `IDR ${totalTax.toLocaleString()}`
     : 'IDR 0'
 
   return (
     <Card>
       <CardContent sx={{ p: theme => `${theme.spacing(5)} !important` }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
-          <Typography variant='h5'>Total Fee</Typography>
+          <Typography variant='h5'>Total Tax</Typography>
           <Box
             sx={{
               display: 'flex',
@@ -109,11 +109,11 @@ const TotalFee = () => {
               width: 48,
               height: 48,
               borderRadius: '50%',
-              backgroundColor: 'warning.main',
+              backgroundColor: 'info.main',
               color: 'white'
             }}
           >
-            <i className='ri-money-dollar-circle-line' style={{ fontSize: '1.5rem' }}></i>
+            <i className='ri-percent-line' style={{ fontSize: '1.5rem' }}></i>
           </Box>
         </Box>
 
@@ -121,25 +121,18 @@ const TotalFee = () => {
           <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
             <CircularProgress size={40} />
           </Box>
-        ) : error ? (
-          <>
-            <Typography variant='h3' sx={{ mb: 1, fontWeight: 'bold' }}>
-              {formattedFee}
-            </Typography>
-            <Typography variant='body2' sx={{ mb: 1, color: 'text.secondary' }}>
-              Total platform fee
-            </Typography>
-            <Typography variant='caption' color='error' sx={{ display: 'block', mb: 3 }}>
-              {error}
-            </Typography>
-          </>
         ) : (
           <>
             <Typography variant='h3' sx={{ mb: 1, fontWeight: 'bold' }}>
-              {formattedFee}
+              {formattedTax}
             </Typography>
             <Typography variant='body2' sx={{ mb: 4, color: 'text.secondary' }}>
-              Total platform fee
+              Total tax collected
+              {error && (
+                <Typography component="span" color="error" sx={{ ml: 1, fontSize: '0.75rem' }}>
+                  (Error loading data)
+                </Typography>
+              )}
             </Typography>
           </>
         )}
@@ -149,7 +142,7 @@ const TotalFee = () => {
           fullWidth
           onClick={handleViewAll}
           startIcon={<i className='ri-eye-line'></i>}
-          color='warning'
+          color='info'
         >
           View All Transactions
         </Button>
@@ -158,4 +151,4 @@ const TotalFee = () => {
   )
 }
 
-export default TotalFee
+export default TotalTax
